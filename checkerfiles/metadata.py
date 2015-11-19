@@ -2,76 +2,28 @@
 
 '''
 -------------------------------------------------
-Metadata conventions for batch cfChecker.py
-
-** This acts as a library of required and 
-recommended metadata fields for particular 
-standards/conventions specified in main 
-cfChecker.py script. 
-
-
 @author: K. Druken- NCI (kelsey.druken@anu.edu.au)
-Date:   14-Aug-2015
-Version: 1
 
+'metadata.py' is used by 'nci-checker.py' to check
+all file metadata information. When checking global
+attributes, the Attribute Convention for Data 
+Discovery is used (ACDD). 
 
 -------------------------------------------------
 '''
 import sys
-# For some reason netCDF4 module not loading within virtual environment on VDI 
-# Way to get around this is to append sys.path with full path to module
-#sys.path.append('/home/900/kad900/.local/lib/python2.7/site-packages/netCDF4-1.1.9-py2.7-linux-x86_64.egg')
 import netCDF4 as nc
 
 
 
-# 	''' Initialise counters '''
-# 	req = []
-# 	rec = []
-# 	sug = []
-# 	ok = []
-	
-	
-# 	''' Required fields '''
-# 	meta = required()
-# 	for item in meta.keys():
-# 		if item not in atts:
-# 			req.append(item)
-# 		else:
-# 			ok.append(item)
-# 		
-# 
-# 	''' Recommended fields '''
-# 	meta = recommend()
-# 	for item in meta.keys():
-# 		if item not in atts:
-# 			rec.append(item)
-# 		else:
-# 			ok.append(item)
-# 		
-# 			
-# 	''' Suggested fields '''			
-# 	meta = suggest()
-# 	for item in meta.keys():
-# 		if item not in atts:
-# 			sug.append(item)
-# 		else:
-# 			ok.append(item)
-# 		
-# 			
-# 	return req, rec, sug, ok
-
-''' 
-
-Class routine to initialise the ACDD required (req), highly 
-recommended (rec), and suggested (sug) global file attributes
-as well as compare to a set of .nc file attributes (ncattrs)
-and record which are not present. 
-
-'''
-
 class meta_check():	
-	
+	''' 
+	Class routine to initialise the ACDD required (req), highly 
+	recommended (rec), and suggested (sug) global file attributes
+	as well as compare to a set of .nc file attributes (ncattrs)
+	and record which are not present. 	
+	'''	
+
 	def __init__(self):
 		self.req = dict.fromkeys(check_req(), 0)
 		self.rec = dict.fromkeys(check_rec(), 0)

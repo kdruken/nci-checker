@@ -1,22 +1,30 @@
 #!/usr/bin/env python
 
 '''
--------------------------------------------------
+---------------------------------------------------------------
 @author: K. Druken- NCI (kelsey.druken@anu.edu.au)
-Date Created:   10-Aug-2015
+Date Created:   20-Nov-2015
 Version: 4
 
-Last modified:  29-Oct-2015
--------------------------------------------------
+Last modified:  20-Nov-2015
+
+
+---------------------------------------------------------------
+Non-standard Dependencies:
+    Python modules: numpy, netCDF4, cdms
+    Libraries: udunits
+
+Initial setup: 
+    See readme file for more detailed information. Before 
+    running code for first time, the udunits2 library path 
+    might need to be added on your system. The 'udunits' 
+    library name may also need modification if using on OSX. 
+    See the 'cfchecks.py' included in checkerfiles/ and 
+    comment/uncomment appropriate line for your system. 
+ 
+--------------------------------------------------------------
 '''
-
-# import numpy as np
-# import os, sys
-# import multiprocessing as mp
-# from datetime import datetime
-# import time
 from checkerfiles import *
-
 
 
 '''--------------------------------------------------------------
@@ -28,7 +36,7 @@ def help():
 	print '-'*20, ' Options ', '-'*20 
 	print "{:<20}{:<50}".format('\t --help', 'Print a usage message and exit')
 	print "{:<20}{:<50}".format('\t --dir', 'Specifiy before directory to check entire contents')
-	print "{:<20}{:<50}".format('\t --n', 'Specifiy the number of python multiprocesses to use (default n = 8)')
+	print "{:<20}{:<50}".format('\t --np', 'Specifiy the number of python multiprocesses to use (default np = 8)')
 	print "{:<20}{:<50}".format('\t --log', 'Save detailed log output')
 	print "{:<20}{:<50}".format('\t --brief', 'Save brief log output')
 	print "{:<20}{:<50}".format('\t --fn', 'Specify prefix of log/brief filename')
@@ -66,7 +74,7 @@ def getinputs():
 		
 	# '--n' specifies the number of processes to run, default is n=8
 	if sys.argv.count('--n') == 1:
-		ncpu = int(sys.argv[sys.argv.index('--n')+1])
+		ncpu = int(sys.argv[sys.argv.index('--np')+1])
 	else:
 		ncpu = 8
 	
@@ -166,7 +174,7 @@ def stdNameTable():
 	for i in range(0, len(sys.argv)):
 		# '--nci_snt' specifies to use nci version of standard name table
 		if sys.argv.count('--nci_snt') == 1:
-			sn = './QCchecker/Standards_Library/nci-standard-name-table.xml'
+			sn = './checkerfiles/nci-standard-name-table.xml'
 		else:
 			sn = []
 	return sn
@@ -210,9 +218,10 @@ def worker(cpu, chunkSize, q, cfQ, metaQ):
 			# Keep track of netCDF format
 			meta.saveFormat(ncformat)		
 
-			'''-------------------------------------------------------
-			    Wrapper for CF-Convention 'cfchecks.py' 
-			   -------------------------------------------------------'''
+			'''
+			-------------------------------------------------------
+			Wrapper for CF-Convention 'cfchecks.py' 
+			-------------------------------------------------------'''
 			# Search 'cfchecks.py' output for CF errors, warnings, and info messages
 			with open ('temp'+str(cpu)+'.out', 'r') as tempout:
 				tempout = tempout.read().splitlines()

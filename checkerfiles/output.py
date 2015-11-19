@@ -2,13 +2,10 @@
 
 '''
 -------------------------------------------------
+@author: K. Druken- NCI (kelsey.druken@anu.edu.au
 
 
-@author: K. Druken- NCI (kelsey.druken@anu.edu.au)
-Date:   14-Aug-2015
-Version: 1
-
-
+Prints all output from 'nci-checker.py'
 -------------------------------------------------
 '''
 
@@ -78,9 +75,10 @@ def header(fn_out, filesdir, file, nfiles):
 def report(results, log, nfiles):
 	from operator import itemgetter
 	
-	''' ------------------------------------
-		CF-Results 
-		------------------------------------''' 
+	''' 
+	------------------------------------
+	CF-Results 
+	------------------------------------''' 
 	print >>log, '_'*lw
 	print >>log, "{0:^90}".format("NCI CF DATA COMPLIANCE REPORT")
 	print >>log, ' '
@@ -122,9 +120,10 @@ def report(results, log, nfiles):
 	print >>log, ' '
 	
 	
-	''' ------------------------------------
-		Metadata-Results 
-		------------------------------------''' 
+	''' 
+	------------------------------------
+	Metadata-Results 
+	------------------------------------''' 
 	print >>log, '_'*lw
 	print >>log, "{0:^90}".format("NCI ACDD METADATA COMLIANCE REPORT \n")
 	print >>log, 'For help with metadata compliance, refer to the ACDD guide: \n'
@@ -135,7 +134,7 @@ def report(results, log, nfiles):
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('MISSING Required Attribute(s)', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.req.items()):
+	for key, value in sorted(results.req.items(), key=itemgetter(1,0), reverse=True):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
@@ -145,7 +144,7 @@ def report(results, log, nfiles):
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('MISSING Highly Recommended Attribute(s)', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.rec.items()):
+	for key, value in sorted(results.rec.items(), key=itemgetter(1,0), reverse=True):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
@@ -155,24 +154,25 @@ def report(results, log, nfiles):
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('MISSING Suggested Attribute(s)', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.sug.items()):
+	for key, value in sorted(results.sug.items(), key=itemgetter(1,0), reverse=True):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
 	
 	
-	''' ------------------------------------
-		Additional info 
-		------------------------------------''' 
+	''' 
+	------------------------------------
+	Additional info 
+	------------------------------------''' 
 	print >>log, '_'*lw
-	print >>log, "{0:^90}".format("FILE FORMAT & ADDITIONAL METADATA \n")
+	print >>log, "{0:^90}".format("ADDITIONAL METADATA \n")
 	print >>log, '_'*lw
 	print >>log, ' '
 	print >>log, '-'*lw
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Attribute(s)', '', '# files', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.other.items()):
+	for key, value in sorted(results.other.items(), key=itemgetter(1,0), reverse=True):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
@@ -181,7 +181,7 @@ def report(results, log, nfiles):
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('File format(s)', '', '# files', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.format.items()):
+	for key, value in sorted(results.format.items(), key=itemgetter(1,0), reverse=True):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
