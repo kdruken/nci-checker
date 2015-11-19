@@ -180,7 +180,7 @@ directory. Information on 'cfchecks.py' can be found at:
 https://pypi.python.org/pypi/cfchecker/2.0.9
 --------------------------------------------------------------'''	
 def worker(cpu, chunkSize, q, cfQ, metaQ):  
-	script = './checkerNCI/cfchecks2.py' 
+	script = './checkerfiles/cfchecks2.py' 
 	for kk in range(0, chunkSize):
 		if q.empty() == False:
 			ncfile = q.get()

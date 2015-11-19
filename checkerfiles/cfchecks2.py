@@ -44,13 +44,16 @@ from cdms2.auxcoord import FileAuxAxis1D
 
 
 # Version is imported from the package module cfchecker/__init__.py
-from cfchecker import __version__
+#from cfchecker import __version__
+__version__ = '2.0.9'
 
 # Use ctypes to interface to the UDUNITS-2 shared library
 # The udunits2 library needs to be in a standard path o/w export LD_LIBRARY_PATH
 from ctypes import *
-udunits=CDLL("libudunits2.0.dylib")
- 
+# On Mac:
+# udunits=CDLL("libudunits2.0.dylib")
+udunits=CDLL("libudunits2.so")
+
 STANDARDNAME = 'http://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml'
 AREATYPES = 'http://cfconventions.org/Data/area-type-table/current/src/area-type-table.xml'
 
