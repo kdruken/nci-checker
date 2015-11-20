@@ -81,25 +81,32 @@ def check_rec():
 		'history',
 		'institution',
 		'license',
-		'creator_name',
 		'project',
+		'instrument',
+		'platform',
 		'standard_name_vocabulary',
 		'keywords',
 		'processing_level',
 		'metadata_link',
 		'geospatial_lat_min',
 		'geospatial_lon_min',
+		'geospatial_lat_max',
+		'geospatial_lon_min',		
 		'geospatial_vertical_min',
-		'time_coverage_start'
+		'geospatial_vertical_max'
+		'geospatial_vertical_positive',
+		'geospatial_bounds',
+		'geospatial_bounds_crs',
+		'geospatial_bounds_vertical_crs',
+		'time_coverage_start',
+		'time_coverage_end',
+		'time_coverage_duration',
+		'time_coverage_resolution'
 		]
 	
 def check_sug():
 	return [
-		'date_modified',
-		'date_issued',
-		'creator_type',
-		'contributor_name',
-		'id',	
+		'date_modified',	
 		'references',
 		'geospatial_bounds',
 		'geospatial_bounds_crs',
@@ -107,4 +114,8 @@ def check_sug():
 		'geospatial_lat_units',
 		'geospatial_lon_units',
 		'geospatial_vertical_units'
+		'geospatial_vertical_resolution',
+		'geospatial_lat_resolution',
+		'geospatial_lon_resolution',
+		'keywords_vocabulary'
 		]
