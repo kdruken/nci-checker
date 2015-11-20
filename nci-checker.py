@@ -74,7 +74,7 @@ def getinputs():
 	
 		
 	# '--n' specifies the number of processes to run, default is n=8
-	if sys.argv.count('--n') == 1:
+	if sys.argv.count('--np') == 1:
 		ncpu = int(sys.argv[sys.argv.index('--np')+1])
 	else:
 		ncpu = 8
