@@ -42,6 +42,7 @@ def help():
 	print "{:<20}{:<50}".format('\t --fn', 'Specify prefix of log/brief filename')
 	print '\n'
 
+
 '''--------------------------------------------------------------
 Get user inputs
 --------------------------------------------------------------'''
@@ -96,6 +97,7 @@ def getinputs():
 	return filesdir, file, ncpu, detailed_log, fn_out
 
 
+
 '''--------------------------------------------------------------
 Initialise list of .nc files to check within directory
 --------------------------------------------------------------'''
@@ -127,7 +129,7 @@ def getAllFiles(filesdir, file, fileList, q):
 		q.put(file)			
 	
 '''--------------------------------------------------------------
-Initialise 
+Initialise CF variable
 --------------------------------------------------------------'''
 class initCF(object):
 	def __init__(self, vars):
@@ -136,8 +138,7 @@ class initCF(object):
 		self.warn = dict.fromkeys(vars, 0)
 		self.info = dict.fromkeys(vars, 0)
 
-
-		
+	
 		
 '''--------------------------------------------------------------
 Use to sum final totals 
@@ -169,6 +170,9 @@ Check for particular standard variable name standards
 ** This is a modification to CF-compliance where new standard
 variable libraries have been developed to expand CF-like
 compliance for other geosciences.
+
+** 20-Nov-2015: This new table does not yet exist, but process
+				in place to work with this compliance tool. 
 --------------------------------------------------------------'''	
 def stdNameTable():
 	for i in range(0, len(sys.argv)):
@@ -180,6 +184,7 @@ def stdNameTable():
 	return sn
 		
 
+
 '''--------------------------------------------------------------
 Run the NetCDF Climate Forcast Conventions compliance checker
 version 2.0.9 over each '.nc' file found under the specified
@@ -188,7 +193,7 @@ directory. Information on 'cfchecks.py' can be found at:
 https://pypi.python.org/pypi/cfchecker/2.0.9
 --------------------------------------------------------------'''	
 def worker(cpu, chunkSize, q, cfQ, metaQ):  
-	script = './checkerfiles/cfchecks2.py' 
+	script = './checkerfiles/cfchecks.py' 
 	for kk in range(0, chunkSize):
 		if q.empty() == False:
 			ncfile = q.get()
@@ -282,94 +287,94 @@ def worker(cpu, chunkSize, q, cfQ, metaQ):
 '''--------------------------------------------------------------
 Main Program
 --------------------------------------------------------------'''	
-# def main():
-start_time = datetime.now()
+def main():
+	start_time = datetime.now()
+
+
+	'''--------------------------------------------------------------
+	Get user inputs, initialise queues, and determine number of 
+	processes to split jobs across. 
+	--------------------------------------------------------------'''
+	filesdir, file, ncpu, detailed_log, fn_out = getinputs()	
+
+	# Define queues for all the data/metadata reporting
+	# that need saving from each process
+	q = mp.Queue()
+	fileList = []
+	getAllFiles(filesdir, file, fileList, q)
+	cf = mp.Queue()
+	meta = mp.Queue()
+
+
+	# Determine total number files per processor (chunkSize)
+	# Can use mp.cpu_count() to figure out #CPUs available if desired 
+	if ncpu > len(fileList):
+		ncpu = len(fileList)
+		chunkSize = 1
+	else:
+		chunkSize = int(np.ceil(len(fileList)/float(ncpu)))
+
+
+	'''--------------------------------------------------------------
+	Setup, run, join, and retrieve results for output
+	--------------------------------------------------------------'''	
+	# Print job info
+	output.begin(filesdir, file, ncpu)
+
+	# Setup a list of processes that we want to run
+	processes = []
+	for x in range(0, ncpu):
+		p = mp.Process(target=worker, args=(x, chunkSize, q, cf, meta))
+		processes.append(p)
+
+	# Run processes
+	for p in processes:
+		p.start()
+
+	# Exit the completed processes
+	for p in processes:
+		p.join()
+
+	# Get process results from the output queue
+	CF = [cf.get() for p in processes]
+	META = [meta.get() for p in processes]
+
+
+	'''--------------------------------------------------------------
+	Sum totals and print output
+	--------------------------------------------------------------'''
+	results = finalSum()
+	for proc in range(0, ncpu):
+		sum(results.req, META[proc].req)
+		sum(results.rec, META[proc].rec)
+		sum(results.sug, META[proc].sug)
+		sum(results.other, META[proc].other)
+		sum(results.format, META[proc].format)
+		sum(results.err, CF[proc].err)
+		sum(results.warn, CF[proc].warn)
+		sum(results.info, CF[proc].info)
+
+
+	# Print output to report and screen
+	log, fn_out = output.header(fn_out, filesdir, file, len(fileList))
+	output.report(results, log, len(fileList))
+	output.screen(fn_out)
+	output.append(fn_out, detailed_log, ncpu)
+
+
+	'''--------------------------------------------------------------
+	Cleanup and exit
+	--------------------------------------------------------------'''
+	# Either way, delete temp files before exiting
+	for proc in range(0, ncpu):
+		os.system('rm temp'+str(proc)+'.out')
+		os.system('rm temp'+str(proc)+'.log')
+
+	
+	# Display total duration for compliance check 
+	end_time = datetime.now()
+	print('Duration: {}'.format(end_time - start_time))
 
 
 
-'''--------------------------------------------------------------
-Get user inputs, initialise queues, and determine number of 
-processes to split jobs across. 
---------------------------------------------------------------'''
-filesdir, file, ncpu, detailed_log, fn_out = getinputs()	
-
-# Define queues for all the data/metadata reporting
-# that need saving from each process
-q = mp.Queue()
-fileList = []
-getAllFiles(filesdir, file, fileList, q)
-cf = mp.Queue()
-meta = mp.Queue()
-
-
-# Determine total number files per processor (chunkSize)
-# Can use mp.cpu_count() to figure out #CPUs available if desired 
-if ncpu > len(fileList):
-	ncpu = len(fileList)
-	chunkSize = 1
-else:
-	chunkSize = int(np.ceil(len(fileList)/float(ncpu)))
-
-
-'''--------------------------------------------------------------
-Setup, run, join, and retrieve results for output
---------------------------------------------------------------'''	
-# Print job info
-output.begin(filesdir, file, ncpu)
-
-# Setup a list of processes that we want to run
-processes = []
-for x in range(0, ncpu):
-	p = mp.Process(target=worker, args=(x, chunkSize, q, cf, meta))
-	processes.append(p)
-
-# Run processes
-for p in processes:
-	p.start()
-
-# Exit the completed processes
-for p in processes:
-	p.join()
-
-# Get process results from the output queue
-CF = [cf.get() for p in processes]
-META = [meta.get() for p in processes]
-
-
-'''--------------------------------------------------------------
-Sum totals and print output
---------------------------------------------------------------'''
-results = finalSum()
-for proc in range(0, ncpu):
-	sum(results.req, META[proc].req)
-	sum(results.rec, META[proc].rec)
-	sum(results.sug, META[proc].sug)
-	sum(results.other, META[proc].other)
-	sum(results.format, META[proc].format)
-	sum(results.err, CF[proc].err)
-	sum(results.warn, CF[proc].warn)
-	sum(results.info, CF[proc].info)
-
-
-# Print output to report and screen
-log, fn_out = output.header(fn_out, filesdir, file, len(fileList))
-output.report(results, log, len(fileList))
-output.screen(fn_out)
-output.append(fn_out, detailed_log, ncpu)
-
-
-'''--------------------------------------------------------------
-Cleanup and exit
---------------------------------------------------------------'''
-# Either way, delete temp files before exiting
-for proc in range(0, ncpu):
-	os.system('rm temp'+str(proc)+'.out')
-	os.system('rm temp'+str(proc)+'.log')
-
-
-end_time = datetime.now()
-print('Duration: {}'.format(end_time - start_time))
-
-
-
-# main()
+main()
