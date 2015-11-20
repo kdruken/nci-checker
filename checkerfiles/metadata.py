@@ -91,7 +91,7 @@ def check_rec():
 		'geospatial_lat_min',
 		'geospatial_lon_min',
 		'geospatial_lat_max',
-		'geospatial_lon_min',		
+		'geospatial_lon_max',		
 		'geospatial_vertical_min',
 		'geospatial_vertical_max'
 		'geospatial_vertical_positive',
