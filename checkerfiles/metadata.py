@@ -93,7 +93,7 @@ def check_rec():
 		'geospatial_lat_max',
 		'geospatial_lon_max',		
 		'geospatial_vertical_min',
-		'geospatial_vertical_max'
+		'geospatial_vertical_max',
 		'geospatial_vertical_positive',
 		'geospatial_bounds',
 		'geospatial_bounds_crs',
@@ -113,7 +113,7 @@ def check_sug():
 		'geospatial_bounds_vertical_crs',
 		'geospatial_lat_units',
 		'geospatial_lon_units',
-		'geospatial_vertical_units'
+		'geospatial_vertical_units',
 		'geospatial_vertical_resolution',
 		'geospatial_lat_resolution',
 		'geospatial_lon_resolution',
