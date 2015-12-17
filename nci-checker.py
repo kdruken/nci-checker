@@ -137,6 +137,13 @@ class initCF(object):
 		self.err = dict.fromkeys(vars, 0)
 		self.warn = dict.fromkeys(vars, 0)
 		self.info = dict.fromkeys(vars, 0)
+	
+	def newvars(self, vars):
+		for var in vars:
+			if var not in self.err.keys():
+				self.err[var] = 0
+				self.warn[var] = 0
+				self.info[var] = 0
 
 	
 		
@@ -197,7 +204,7 @@ def worker(cpu, chunkSize, q, cfQ, metaQ):
 	for kk in range(0, chunkSize):
 		if q.empty() == False:
 			ncfile = q.get()
-			print 'PROC: ***', cpu, '*** Checking file:  ', kk+1, ' of ', chunkSize, '...'
+			print '[ PROCESS: **', cpu, '** ] \t Checking file:  ', kk+1, ' of ', chunkSize, '...'
 			
 			# Run the 'cfchecks.py' script on the individual file
 			# Check for new standard name table first
@@ -212,10 +219,13 @@ def worker(cpu, chunkSize, q, cfQ, metaQ):
 			# Open/read file and extract global attributes, netCDF format
 			gatts, ncformat, vars = readfile.read(ncfile)
 			
-			# Initialise lists when kk = 0
+			# Initialise CF and ACDD lists on first loop then check 
+			# if variables the same between each file on subsequent loops. 
 			if kk == 0:
-				meta = metadata.meta_check() 		# Initialise list for tracking ACDD counts
-				cf = initCF(vars)					# Initialise list for tracking CF messages
+				meta = metadata.meta_check() 		
+				cf = initCF(vars)	
+			else:
+				cf.newvars(vars)			
 			
 			# ACDD Compliance Check
 			meta.acddCheck(gatts)			# Check list against global file attributes, track sum of missing acdd attrs
@@ -322,19 +332,25 @@ def main():
 	output.begin(filesdir, file, ncpu)
 
 	# Setup a list of processes that we want to run
+	print "Initiating multiprocesses..."
 	processes = []
 	for x in range(0, ncpu):
 		p = mp.Process(target=worker, args=(x, chunkSize, q, cf, meta))
 		processes.append(p)
 
 	# Run processes
+	print "Starting multiprocesses..."
+	print ""
 	for p in processes:
 		p.start()
 
 	# Exit the completed processes
 	for p in processes:
 		p.join()
-
+	
+	print ""
+	print "Joining multiprocesses..."
+	print ""
 	# Get process results from the output queue
 	CF = [cf.get() for p in processes]
 	META = [meta.get() for p in processes]
@@ -367,6 +383,7 @@ def main():
 	--------------------------------------------------------------'''
 	# Either way, delete temp files before exiting
 	for proc in range(0, ncpu):
+		print 'Removing temp files...'
 		os.system('rm temp'+str(proc)+'.out')
 		os.system('rm temp'+str(proc)+'.log')
 
@@ -376,5 +393,6 @@ def main():
 	print('Duration: {}'.format(end_time - start_time))
 
 
+if __name__ == '__main__':
+	main()
 
-main()

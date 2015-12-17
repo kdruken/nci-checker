@@ -94,7 +94,7 @@ def report(results, log, nfiles):
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF ERRORS', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.err.items(), key=itemgetter(1), reverse=True):
+	for key, value in sorted(results.err.items(), key=itemgetter(1,0), reverse=True):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
@@ -103,7 +103,7 @@ def report(results, log, nfiles):
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF WARNINGS', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.warn.items(), key=itemgetter(1), reverse=True):
+	for key, value in sorted(results.warn.items(), key=itemgetter(1,0), reverse=True):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
@@ -112,7 +112,7 @@ def report(results, log, nfiles):
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF INFO MESSAGES', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.info.items(), key=itemgetter(1), reverse=True):
+	for key, value in sorted(results.info.items(), key=itemgetter(1,0), reverse=True):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
@@ -131,7 +131,7 @@ def report(results, log, nfiles):
 	print >>log, '_'*lw
 	print >>log, ' '
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('MISSING Required Attribute(s)', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Required Attribute(s)', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.req.items(), key=itemgetter(1,0), reverse=True):
@@ -141,7 +141,7 @@ def report(results, log, nfiles):
 	
 	''' '''
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('MISSING Highly Recommended Attribute(s)', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Highly Recommended Attribute(s)', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.rec.items(), key=itemgetter(1,0), reverse=True):
@@ -151,7 +151,7 @@ def report(results, log, nfiles):
 
 	''' ''' 
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('MISSING Suggested Attribute(s)', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Suggested Attribute(s)', '', '# issues', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.sug.items(), key=itemgetter(1,0), reverse=True):
