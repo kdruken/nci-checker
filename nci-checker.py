@@ -188,15 +188,6 @@ class finalSum(object):
 				dict1[item] = dict2[item]
 		self.__dict__[attr] = dict1
 
-#	def sum(dict1, dict2):
-#		for item in dict2.keys():
-#			if item in dict1.keys():
-#				dict1[item] = dict1[item] + dict2[item]
-#			else:
-#				dict1[item] = dict2[item]
-
-# results.sum(results.__dict__[attr], META[proc].__dict__[attr])
-
 
 	
 	
