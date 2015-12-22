@@ -25,22 +25,31 @@ Initial setup:
 --------------------------------------------------------------
 '''
 from checkerfiles import *
+import tempfile, shutil
 
 
 '''--------------------------------------------------------------
 Help/usage message
 --------------------------------------------------------------'''
 def help():
-	print '\n'
-	print 'Usage: python ncichecker.py [OPTIONS] file/directory '
-	print '-'*20, ' Options ', '-'*20 
-	print "{:<20}{:<50}".format('\t --help', 'Print a usage message and exit')
-	print "{:<20}{:<50}".format('\t --dir', 'Specifiy before directory to check entire contents')
-	print "{:<20}{:<50}".format('\t --np', 'Specifiy the number of python multiprocesses to use (default np = 8)')
-	print "{:<20}{:<50}".format('\t --log', 'Save detailed log output')
-	print "{:<20}{:<50}".format('\t --brief', 'Save brief log output')
-	print "{:<20}{:<50}".format('\t --fn', 'Specify prefix of log/brief filename')
-	print '\n'
+	''' 
+
+	Usage: python nci-checker.py [OPTIONS] file/directory
+
+	       (No flag required before listing a filename.) 
+
+	Options:
+
+	--help 		Print this usage message and exit
+	--dir 		Specifiy before directory to check entire contents
+	--np 		Specifiy the number of python multiprocesses 
+			to use (default np = 8)
+	--log 		Save detailed output
+	--brief 	Save brief summary output
+	--fn 		Specify prefix of log/brief filename (default = datetimestamp)
+	--debug		Do not delete the tmp files for debugging
+
+	'''
 
 
 '''--------------------------------------------------------------
@@ -49,14 +58,14 @@ Get user inputs
 def getinputs():
 	# If no inputs given, print help info and exit
 	if len(sys.argv) < 2:
-		help()	
+		print help.__doc__	
 		sys.exit()
 	
 	# '--help', print how to use this tool
 	helpStr = ['--help']
 	for item in sys.argv:
 		if item in helpStr:
-			help() 
+			print help.__doc__
 			sys.exit()
 			
 	# Directory with 'nc' files to check, will be second input value
@@ -92,9 +101,15 @@ def getinputs():
 		fn_out = str(sys.argv[sys.argv.index('--fn')+1])
 	else:
 		fn_out = []
+
+	# '--debug': flag for debugging, leaves tmp files
+	if sys.argv.count('--debug') == 1:
+		debug = 1
+	else:	
+		debug = 0
 		
 
-	return filesdir, file, ncpu, detailed_log, fn_out
+	return filesdir, file, ncpu, detailed_log, fn_out, debug
 
 
 
@@ -137,6 +152,7 @@ class initCF(object):
 		self.err = dict.fromkeys(vars, 0)
 		self.warn = dict.fromkeys(vars, 0)
 		self.info = dict.fromkeys(vars, 0)
+		self.total = dict.fromkeys(vars,0)
 	
 	def newvars(self, vars):
 		for var in vars:
@@ -144,6 +160,7 @@ class initCF(object):
 				self.err[var] = 0
 				self.warn[var] = 0
 				self.info[var] = 0
+				self.total[var] = 0
 
 	
 		
@@ -160,14 +177,27 @@ class finalSum(object):
 		self.sug = {}
 		self.other = {}
 		self.format = {}
+		self.total = {}
 		
+	def sum(self, attr, dict2):
+		dict1 = self.__dict__[attr]
+		for item in dict2.keys():
+			if item in dict1.keys():
+				dict1[item] = dict1[item] + dict2[item]
+			else:
+				dict1[item] = dict2[item]
+		self.__dict__[attr] = dict1
 
-def sum(dict1, dict2):
-	for item in dict2.keys():
-		if item in dict1.keys():
-			dict1[item] = dict1[item] + dict2[item]
-		else:
-			dict1[item] = dict2[item]
+#	def sum(dict1, dict2):
+#		for item in dict2.keys():
+#			if item in dict1.keys():
+#				dict1[item] = dict1[item] + dict2[item]
+#			else:
+#				dict1[item] = dict2[item]
+
+# results.sum(results.__dict__[attr], META[proc].__dict__[attr])
+
+
 	
 	
 
@@ -199,32 +229,47 @@ directory. Information on 'cfchecks.py' can be found at:
 
 https://pypi.python.org/pypi/cfchecker/2.0.9
 --------------------------------------------------------------'''	
-def worker(cpu, chunkSize, q, cfQ, metaQ):  
+def worker(cpu, q, cfQ, metaQ, tmpdir): 
+	print 'Process: '+str(cpu)+' started.' 
 	script = './checkerfiles/cfchecks.py' 
-	for kk in range(0, chunkSize):
-		if q.empty() == False:
+
+	# Initiate metadata tracking
+	meta = metadata.meta_check() 	
+	cf = []
+	#for kk in range(0, chunkSize):
+	kk = 0
+
+	'''
+	-------------------------------------------------
+	While the fileList queue still has files: check
+	------------------------------------------------- '''	
+	while q.empty() == False:
+		try:
 			ncfile = q.get()
-			print '[ PROCESS: **', cpu, '** ] \t Checking file:  ', kk+1, ' of ', chunkSize, '...'
+			print "{:<14}{:^5}{:<15}{:>15}{:^5}".format('[PROCESS: **', cpu, ' **]', 'Checking file: ', kk+1)
 			
 			# Run the 'cfchecks.py' script on the individual file
 			# Check for new standard name table first
 			sn = stdNameTable()
+			tmpfile = tmpdir+'/tmp'+str(cpu)+'.out'
 			if not sn:
-				os.system(script+' '+ncfile+' > temp'+str(cpu)+'.out')
+				os.system(script+' '+ncfile+' > '+tmpfile)
 			else:
-				os.system(script+' -s '+sn+' '+ncfile+' > temp'+str(cpu)+'.out')
+				os.system(script+' -s '+sn+' '+ncfile+' > '+tmpfile)
 			
-			templog = output.templog(cpu, ncfile)
+			tmplog = output.tmplog(cpu, ncfile, tmpdir)
 
 			# Open/read file and extract global attributes, netCDF format
 			gatts, ncformat, vars = readfile.read(ncfile)
 			
 			# Initialise CF and ACDD lists on first loop then check 
 			# if variables the same between each file on subsequent loops. 
-			if kk == 0:
-				meta = metadata.meta_check() 		
+			if not cf:
+				#meta = metadata.meta_check() 
+				#print 'Process: '+str(cpu)+'   Initiating cf variable...'		
 				cf = initCF(vars)	
-			else:
+			else:	
+				#print  'Process: '+str(cpu)+'   updating cf variables...'
 				cf.newvars(vars)			
 			
 			# ACDD Compliance Check
@@ -238,8 +283,8 @@ def worker(cpu, chunkSize, q, cfQ, metaQ):
 			Wrapper for CF-Convention 'cfchecks.py' 
 			-------------------------------------------------------'''
 			# Search 'cfchecks.py' output for CF errors, warnings, and info messages
-			with open ('temp'+str(cpu)+'.out', 'r') as tempout:
-				tempout = tempout.read().splitlines()
+			with open (tmpfile, 'r') as tmpout:
+				tmpout = tmpout.read().splitlines()
 		
 			# First find variable names/indices in output
 			varlist = []
@@ -247,9 +292,9 @@ def worker(cpu, chunkSize, q, cfQ, metaQ):
 			lnnum = [] 
 			lnnum.append(0)
 			strtemp = 'Checking variable: '
-			for i in range(0, len(tempout[:-3])):			
-				if tempout[i].find(strtemp) != -1:
-					varlist.append(tempout[i][len(strtemp):])
+			for i in range(0, len(tmpout[:-3])):			
+				if tmpout[i].find(strtemp) != -1:
+					varlist.append(tmpout[i][len(strtemp):])
 					lnnum.append(i)
 			# add index for end of file	
 			lnnum.append(i)	
@@ -257,40 +302,97 @@ def worker(cpu, chunkSize, q, cfQ, metaQ):
 			# Now search between variable line numbers for associated errors
 			# Note: warning/error 9.5 relates to cf_role and if error/warning present, it
 			# becomes associated with last known variable unless separate search is called.	
-			# Has to do with how cfchecks.py is written.
+			# Has to do with how cfchecks.py is written. Including these types of errors under 
+			# what's called 'global'. 
+
+			# Update Dec-2015: going to instead sum the 'okay' number of files to be consistent
+			# with the other fields in the report
 			for i in range(0, len(lnnum)-1):
-				print >>templog, ' '
+				print >>tmplog, ' '
 				currentVariable = varlist[i]
-				for ltemp in tempout[lnnum[i]:lnnum[i+1]]:
+				err = warn = info = 0		
+				for ltemp in tmpout[lnnum[i]:lnnum[i+1]]:
 					### Checking error messages
 					if ltemp.find('ERROR (9.5)') != -1:
-						cf.err['global'] = cf.err['global'] + 1
-						output.messages(templog, 'global', ltemp)
-						
+						output.messages(tmplog, 'global', ltemp)
+						err = 1	
 					elif ltemp.find('ERROR') != -1:
-						cf.err[currentVariable] = cf.err[currentVariable] + 1
-						output.messages(templog, currentVariable, ltemp)
-	
+						output.messages(tmplog, currentVariable, ltemp)
+						err = 1
+
 					### Checking warning messages
 					elif ltemp.find('WARNING (9.5)') != -1:
-						cf.warn['global'] = cf.warn['global'] + 1
-						output.messages(templog, 'global', ltemp)
-
+						cf.warn['global'] = 1
+						output.messages(tmplog, 'global', ltemp)
+						warn = 1
 					elif ltemp.find('WARNING') != -1:
-						cf.warn[currentVariable] = cf.warn[currentVariable] + 1
-						output.messages(templog, currentVariable, ltemp)
+						cf.warn[currentVariable] = 1
+						output.messages(tmplog, currentVariable, ltemp)
+						warn = 1
 
 					### Checking info messages
 					elif ltemp.find('INFO') != -1:
-						cf.info[currentVariable] = cf.info[currentVariable] + 1
-						output.messages(templog, currentVariable, ltemp)
+						cf.info[currentVariable] = 1
+						output.messages(tmplog, currentVariable, ltemp)
+						info = 1
+
+				# If no errors, warnings or information messages found- add one count to the 
+				# total number of successful files. Either way- increase counter on total
+				# occurrances for this variable.
+				cf.total[currentVariable] += 1
+				if err == 0:
+					cf.err[currentVariable] += 1
+				if warn == 0:
+					cf.warn[currentVariable] += 1
+				if info == 0:
+					cf.info[currentVariable] += 1
 					
 						
-			print >>templog, ' \n'
-					
-	metaQ.put(meta)
-	cfQ.put(cf)
+			print >>tmplog, ' \n'
+			kk += 1
+		except:
+			break	
 
+	try:					
+		metaQ.put(meta)
+		cfQ.put(cf)
+		print 'Process: '+str(cpu)+' completed.'
+
+	except UnboundLocalError, err1:
+		print 'Process: '+str(cpu)+', UnBoundLocalError has occurred: ', err1
+
+	except:
+		print "Unexpected error: ", sys.exc_info()[0], sys.exc_info()[1]
+ 
+
+
+
+'''--------------------------------------------------------------
+To calculate report score 
+--------------------------------------------------------------'''	
+class scoring():
+	def __init__(self):
+		self.err = 0
+		self.warn = 0
+		self.info = 0
+		self.req = 0
+		self.rec = 0
+		self.sug = 0
+		self.other = 0
+		self.format = 0
+
+ 	
+	def calc(self, result, nfiles):
+		cflist = ['err', 'warn', 'info']
+		for attr, score in self.__dict__.items():
+			for key, item in result.__dict__[attr].items():	
+				if attr in cflist:
+					score += float(item)/result.__dict__['total'][key]
+					
+				elif key != 'total':
+					score += float(item)/nfiles
+
+			self.__dict__[attr] = round(score/len(result.__dict__[attr]), 2)
 
 
 
@@ -300,30 +402,28 @@ Main Program
 def main():
 	start_time = datetime.now()
 
+	# Make a temporary directory
+	tmpdir = tempfile.mkdtemp(prefix='tmp', dir='.')
 
 	'''--------------------------------------------------------------
 	Get user inputs, initialise queues, and determine number of 
 	processes to split jobs across. 
 	--------------------------------------------------------------'''
-	filesdir, file, ncpu, detailed_log, fn_out = getinputs()	
+	filesdir, file, ncpu, detailed_log, fn_out, debug = getinputs()	
 
 	# Define queues for all the data/metadata reporting
 	# that need saving from each process
 	q = mp.Queue()
 	fileList = []
+	print "Searching directory and subdirectories for '.nc' files..."
 	getAllFiles(filesdir, file, fileList, q)
 	cf = mp.Queue()
 	meta = mp.Queue()
 
 
-	# Determine total number files per processor (chunkSize)
-	# Can use mp.cpu_count() to figure out #CPUs available if desired 
+	# If number of files is less than requested 'np', reduce to np = total # files
 	if ncpu > len(fileList):
 		ncpu = len(fileList)
-		chunkSize = 1
-	else:
-		chunkSize = int(np.ceil(len(fileList)/float(ncpu)))
-
 
 	'''--------------------------------------------------------------
 	Setup, run, join, and retrieve results for output
@@ -335,7 +435,7 @@ def main():
 	print "Initiating multiprocesses..."
 	processes = []
 	for x in range(0, ncpu):
-		p = mp.Process(target=worker, args=(x, chunkSize, q, cf, meta))
+		p = mp.Process(target=worker, args=(x, q, cf, meta, tmpdir))
 		processes.append(p)
 
 	# Run processes
@@ -361,32 +461,45 @@ def main():
 	--------------------------------------------------------------'''
 	results = finalSum()
 	for proc in range(0, ncpu):
-		sum(results.req, META[proc].req)
-		sum(results.rec, META[proc].rec)
-		sum(results.sug, META[proc].sug)
-		sum(results.other, META[proc].other)
-		sum(results.format, META[proc].format)
-		sum(results.err, CF[proc].err)
-		sum(results.warn, CF[proc].warn)
-		sum(results.info, CF[proc].info)
+		for attr in results.__dict__.keys():
+			try:
+				if attr in ['err', 'warn', 'info', 'total']:
+					results.sum(attr, CF[proc].__dict__[attr])
+				else:
+					results.sum(attr, META[proc].__dict__[attr])
 
+			except AttributeError:						
+				''' 
+				If the processes scan out of order or at different rates
+				some will not have output to sum together, so pass.
+				'''
+				print 'Process: '+str(proc)+', no results from this process to sum.'
+				pass
 
-	# Print output to report and screen
+	'''--------------------------------------------------------------
+	Calculate report scoring
+	--------------------------------------------------------------'''	
+	score = scoring()
+	score.calc(results, len(fileList))
+
+	
+	'''--------------------------------------------------------------
+	Print output to report and screen
+	--------------------------------------------------------------'''	
 	log, fn_out = output.header(fn_out, filesdir, file, len(fileList))
-	output.report(results, log, len(fileList))
+	output.report(results, score, log, len(fileList))
 	output.screen(fn_out)
-	output.append(fn_out, detailed_log, ncpu)
+	output.append(tmpdir, fn_out, detailed_log, ncpu)
 
 
 	'''--------------------------------------------------------------
 	Cleanup and exit
 	--------------------------------------------------------------'''
-	# Either way, delete temp files before exiting
-	for proc in range(0, ncpu):
+	# Either way, delete temp files before exiting (unless in debug mode)
+	if debug == 0:
 		print 'Removing temp files...'
-		os.system('rm temp'+str(proc)+'.out')
-		os.system('rm temp'+str(proc)+'.log')
-
+		shutil.rmtree(tmpdir)
+		print 'Done.'
 	
 	# Display total duration for compliance check 
 	end_time = datetime.now()

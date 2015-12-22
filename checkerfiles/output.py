@@ -27,22 +27,22 @@ def begin(filesdir, file, ncpu):
 	print ' '
 
 
-def templog(cpu, ncfile):
+def tmplog(cpu, ncfile, tmpdir):
 	# Print long log version of information
-	templog = open('temp'+str(cpu)+'.log', 'w')
-	print >>templog, ''
-	print >>templog, '-'*90
-	print >>templog, 'CHECKING FILE: ', ncfile
-	print >>templog, '-'*90
-	print >>templog, ''
-	print >>templog, ''
-	print >>templog, "{:<10}{:<5}{:<60}".format('Variable', '', 'Message')
-	print >>templog, "{:<10}{:<5}{:<60}".format('________', '', '_______')
-	return templog
+	tmplog = open(tmpdir+'/tmp'+str(cpu)+'.log', 'w')
+	print >>tmplog, ''
+	print >>tmplog, '-'*90
+	print >>tmplog, 'CHECKING FILE: ', ncfile
+	print >>tmplog, '-'*90
+	print >>tmplog, ''
+	print >>tmplog, ''
+	print >>tmplog, "{:<10}{:<5}{:<60}".format('Variable', '', 'Message')
+	print >>tmplog, "{:<10}{:<5}{:<60}".format('________', '', '_______')
+	return tmplog
 
 
-def messages(templog, var, message):
-	print >>templog, "{:<10}{:<5}{:<20}".format(var, '', message)
+def messages(tmplog, var, message):
+	print >>tmplog, "{:<10}{:<5}{:<20}".format(var, '', message)
 
 
 
@@ -72,9 +72,9 @@ def header(fn_out, filesdir, file, nfiles):
 	return log, fn_out
 
 
-def report(results, log, nfiles):
+def report(results, score, log, nfiles):
 	from operator import itemgetter
-	
+
 	''' 
 	------------------------------------
 	CF-Results 
@@ -91,29 +91,29 @@ def report(results, log, nfiles):
 	print >>log, '_'*lw
 	print >>log, ' '
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF ERRORS', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF-Convention (Required)', '', '# passed', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.err.items(), key=itemgetter(1,0), reverse=True):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
+	for key, value in sorted(results.err.items(), key=itemgetter(1,0), reverse=False):
+		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', results.total[key])
 	print >>log, ' '
 	print >>log, ' '
 	
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF WARNINGS', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF-Convention (High Priority)', '', '# passed', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.warn.items(), key=itemgetter(1,0), reverse=True):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
+	for key, value in sorted(results.warn.items(), key=itemgetter(1,0), reverse=False):
+		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', results.total[key])
 	print >>log, ' '
 	print >>log, ' '
 
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF INFO MESSAGES', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF-Convention (Low Priority)', '', '# passed', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.info.items(), key=itemgetter(1,0), reverse=True):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
+	for key, value in sorted(results.info.items(), key=itemgetter(1,0), reverse=False):
+		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', results.total[key])
 	print >>log, ' '
 	print >>log, ' '
 	print >>log, ' '
@@ -131,30 +131,30 @@ def report(results, log, nfiles):
 	print >>log, '_'*lw
 	print >>log, ' '
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Required Attribute(s)', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Required Attributes', '', '# passed', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.req.items(), key=itemgetter(1,0), reverse=True):
+	for key, value in sorted(results.req.items(), key=itemgetter(1,0), reverse=False):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
 	
 	''' '''
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Highly Recommended Attribute(s)', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Highly Recommended Attributes', '', '# passed', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.rec.items(), key=itemgetter(1,0), reverse=True):
+	for key, value in sorted(results.rec.items(), key=itemgetter(1,0), reverse=False):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
 
 	''' ''' 
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Suggested Attribute(s)', '', '# issues', '', 'total files')
+	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Suggested Attributes', '', '# passed', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.sug.items(), key=itemgetter(1,0), reverse=True):
+	for key, value in sorted(results.sug.items(), key=itemgetter(1,0), reverse=False):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
@@ -165,14 +165,15 @@ def report(results, log, nfiles):
 	Additional info 
 	------------------------------------''' 
 	print >>log, '_'*lw
-	print >>log, "{0:^90}".format("ADDITIONAL METADATA \n")
+	print >>log, "{0:^90}".format("ADDITIONAL METADATA \n") 
+	print >>log, "{0:<60}".format("The following sections are intended to help highlight the completeness of the additional information included within the scanned files.")
 	print >>log, '_'*lw
 	print >>log, ' '
 	print >>log, '-'*lw
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Attribute(s)', '', '# files', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.other.items(), key=itemgetter(1,0), reverse=True):
+	for key, value in sorted(results.other.items(), key=itemgetter(1,0), reverse=False):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
@@ -181,10 +182,33 @@ def report(results, log, nfiles):
 	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('File format(s)', '', '# files', '', 'total files')
 	print >>log, '-'*lw
 	print >>log, ' '
-	for key, value in sorted(results.format.items(), key=itemgetter(1,0), reverse=True):
+	for key, value in sorted(results.format.items(), key=itemgetter(1,0), reverse=False):
 		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
 	print >>log, ' '
 	print >>log, ' '
+
+
+
+	'''
+	----------------------------
+	Scoring 
+	----------------------------'''
+	print >>log, '_'*lw
+	print >>log, "{:^90}".format("SCORING")
+	print >>log,  '_'*lw
+	print >>log,  ''
+	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('', 'CF', 'ACDD', 'Completeness')
+	print >>log,  '_'*lw
+	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('Required', score.err, score.req, '--')
+	print >>log,  ''
+	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('High-priority', score.warn, score.rec, '--')
+	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('Low-priority', score.info, score.sug, '--')
+	print >>log,  ''
+	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('Additional metadata', '--', '--', score.other)
+	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('File format', '--', '--', score.format)
+	print >>log,  ''
+	print >>log,  ''
+	print >>log,  '_'*lw
 	
 	
 	log.close()
@@ -199,7 +223,7 @@ def screen(fn_out):
 
 
 
-def append(fn_out, detailed_log, ncpu):
+def append(tmpdir, fn_out, detailed_log, ncpu):
 	# Append log with the raw cfchecks.py output if detailed_log == 'y' report
 	log = open(fn_out,'a')
 	if detailed_log == 'y':
@@ -214,7 +238,7 @@ def append(fn_out, detailed_log, ncpu):
 		log.close()
 	
 		for proc in range(0, ncpu):
-			os.system('cat temp'+str(proc)+'.log >> '+fn_out)
+			os.system('cat '+tmpdir+'/tmp'+str(proc)+'.log >> '+fn_out)
 		
 	elif detailed_log == 'n':
 		os.system('rm '+fn_out)

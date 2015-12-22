@@ -33,21 +33,18 @@ class meta_check():
 	
 	def acddCheck(self, ncattrs):
 		for item in self.req:
-			if item not in ncattrs:
+			if item in ncattrs:
 				self.req[item] = self.req[item] + 1
-			else:
 				ncattrs.remove(item)
 				
 		for item in self.rec:
-			if item not in ncattrs:
+			if item in ncattrs:
 				self.rec[item] = self.rec[item] + 1
-			else:
 				ncattrs.remove(item)
 				
 		for item in self.sug:
-			if item not in ncattrs:
+			if item in ncattrs:
 				self.sug[item] = self.sug[item] + 1
-			else:
 				ncattrs.remove(item)
 				
 		for item in ncattrs:
