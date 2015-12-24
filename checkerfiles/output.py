@@ -27,22 +27,28 @@ def begin(filesdir, file, ncpu):
 	print ' '
 
 
-def tmplog(cpu, ncfile, tmpdir):
-	# Print long log version of information
-	tmplog = open(tmpdir+'/tmp'+str(cpu)+'.log', 'w')
-	print >>tmplog, ''
-	print >>tmplog, '-'*90
-	print >>tmplog, 'CHECKING FILE: ', ncfile
-	print >>tmplog, '-'*90
-	print >>tmplog, ''
-	print >>tmplog, ''
-	print >>tmplog, "{:<10}{:<5}{:<60}".format('Variable', '', 'Message')
-	print >>tmplog, "{:<10}{:<5}{:<60}".format('________', '', '_______')
-	return tmplog
+class tmplog:
+	def __init__(self, cpu, tmpdir):
+		self.fn = open(tmpdir+'/tmp'+str(cpu)+'.log', 'w')	
+		#self.tmpout = tmpdir+'/tmp'+str(cpu)+'.out'
+	
+	
+	def header(self, ncfile):
+		print >> self.fn, ''
+		print >> self.fn, '-'*90
+		print >> self.fn, 'CHECKING FILE: ', ncfile
+		print >> self.fn, '-'*90
+		print >> self.fn, ''
+		print >> self.fn, ''
 
+	def message(self, var, message):
+		print >> self.fn, "{:<10}{:<5}{:<20}".format(var, '', message)
 
-def messages(tmplog, var, message):
-	print >>tmplog, "{:<10}{:<5}{:<20}".format(var, '', message)
+	
+	def meta(self, gatts, ncformat):
+		print >> self.fn, "NetCDF Format: \t", ncformat
+		print >> self.fn, "Global Attributes:"
+		print >> self.fn, gatts
 
 
 
