@@ -9,18 +9,38 @@ compliance and (2) Climate and Forcast (CF) Convention compliance.
 
 '''
 import multiprocessing as mp
-import os
-import metadata, readfile, output, cfconvention
+import os, sys
+import metadata, readfile, output, cfscan
+from cfchecks import CFVersion, CFChecker
+from contextlib import contextmanager
+
+
+STANDARDNAME = 'http://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml'
+AREATYPES = 'http://cfconventions.org/Data/area-type-table/current/src/area-type-table.xml'
+udunits=None
+areaTypes=AREATYPES
+version=CFVersion()
+
+
+@contextmanager
+def redirected(stdout):
+	saved_stdout = sys.stdout
+	sys.stdout = open(stdout, 'w')
+	yield
+	sys.stdout = saved_stdout
+
+
 
 
 
 class check:
-	
+
 	def __init__(self):
 		self.fileQueue = mp.Queue()
 		self.cf = mp.Queue()
 		self.meta = mp.Queue()
 		self.fileList = []
+		self.fileErr = mp.Queue()
 
 
 
@@ -57,21 +77,20 @@ class check:
 	Multiprocessing part: This worker function scans and checks
 	compliance in parallel for the number of processes (np) defined.
 	Metadata will be checked using metadata.py while CF compliance is
-	checked using a wrapper (cfconvention.py) to the CF-Convention 
+	checked using a wrapper (cfconvention.py) to the CF-Convention
 	checker (cfchecks.py). 
-	--------------------------------------------------------------'''	
+	--------------------------------------------------------------'''
 	def worker(self, cpu, tmpdir, sn):
-		print 'Process: '+str(cpu)+' started.' 
-		script = './checkerfiles/cfchecks.py' 
+		print 'Process: '+str(cpu)+' started.' 	
 
 		# Initiate metadata tracking
 		meta = metadata.meta_check() 
-		cf = cfconvention.cf()
+		cf = cfscan.cf()
 
-		# Equals zero until a file is checked, then tracks total number 
-		# for this process	
+		# Initialise counters	
 		kk = 0
-		
+		fileErr = []
+
 		# Create tmp log for this process
 		tmplog = output.tmplog(cpu, tmpdir)
 
@@ -85,38 +104,55 @@ class check:
 				ncfile = self.fileQueue.get()
 				print "{:<14}{:^5}{:<15}{:>15}{:^5}".format('[PROCESS: **', cpu, ' **]', 'Checking file: ', kk+1)
 				tmplog.header(ncfile)				
-				
 								
 				# Open/read file and extract global attributes, netCDF format
-				gatts, ncformat, vars = readfile.read(ncfile)
-				tmplog.meta(gatts, ncformat)
+				#gatts, ncformat, conv, vars = readfile.read(ncfile)
+				f = readfile.read(ncfile)
+
+				tmplog.meta(f.atts, f.ncformat, f.conv)
 				
 				# Initialise CF and ACDD lists on first loop then check 
 				# if variables the same between each file on subsequent loops.
-				cf.newvars(vars)
+				cf.newvars(f.vars)
 								
 			
 				# ACDD Compliance Check
 				# Check list against global file attributes, track sum of missing acdd attrs
-				meta.acddCheck(gatts)	
+				meta.acddCheck(f.atts)	
 					
-				# Also keep track of file netCDF format
-				meta.saveFormat(ncformat)		
+				# Also keep track of file netCDF format and conventions used (if any)
+				meta.fileFormat(f.ncformat)
+				meta.conventions(f.conv)		
 
 				'''
 				-------------------------------------------------------
 				Wrapper for CF-Convention 'cfchecks.py' 
 				-------------------------------------------------------'''
-				# Run the 'cfchecks.py' script on the individual file
-				# Check for new standard name table first
+				# Run the 'cfchecks.py' script on the individual file, redirect output to tmpfile
 				tmpfile = tmpdir+'/tmp'+str(cpu)+'.out'
 				
-				if not sn:
-					os.system(script+' '+ncfile+' > '+tmpfile)
+				# Check for new standard name table first
+				if not sn: 
+					standardName=STANDARDNAME
 				else:
-					os.system(script+' -s '+sn+' '+ncfile+' > '+tmpfile)
-
+					standardName=sn
 				
+				# This line initialises cfchecks.py
+				inst = CFChecker(uploader=None, useFileName="yes", badc=None, coards=None, cfStandardNamesXML=standardName, cfAreaTypesXML=areaTypes, udunitsDat=udunits, version=version)
+
+				# This part executes the checker part of cfchecks.py and redirects output to tmpfile
+				# If for any reason a file can't be read, keep track of that 
+				with redirected(stdout=tmpfile):
+					try:
+						rc = inst.checker(ncfile)
+					except:
+						rc = 0
+				
+				if rc == 0:
+					print 'Unexpected error: ', sys.exc_info()[0], sys.exc_info()[1]
+					print '\nFILE: '+ncfile+' [SKIPPING FILE]\n'
+					fileErr.append(ncfile)
+
 				cf.wrapper(tmplog, tmpfile)	
 						
 				print >>tmplog.fn, ' \n'
@@ -126,16 +162,17 @@ class check:
 				break	
 
 		# If results from this process, add to local result queue
-		try:					
-			self.meta.put(meta)
-			self.cf.put(cf)
-			print 'Process: '+str(cpu)+' completed.'
+		#try:					
+		self.meta.put(meta)
+		self.cf.put(cf)
+		self.fileErr.put(fileErr)
+		print 'Process: '+str(cpu)+' completed.'
 
-		except UnboundLocalError, err1:
-			print 'Process: '+str(cpu)+', UnBoundLocalError has occurred: ', err1
+		#except UnboundLocalError, err1:
+		#	print 'Process: '+str(cpu)+', UnBoundLocalError has occurred: ', err1
 
-		except:
-			print "Unexpected error: ", sys.exc_info()[0], sys.exc_info()[1]
+		#except:
+		#	print "Unexpected error: ", sys.exc_info()[0], sys.exc_info()[1]
 	 
 
 

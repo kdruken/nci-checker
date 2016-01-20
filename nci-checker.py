@@ -120,9 +120,12 @@ class getinputs(object):
 			else:
 				self.sn = []
 
-		
-		#return filesdir, file, ncpu, detailed_log, fn_out, debug
-
+		# '-v' specifices CF-Convention version to check against 
+		# (default is most recent if not specified within file)
+		if argv.count('--v') == 1:
+			self.cfver = int(argv[argv.index('--v')+1])
+		else:
+			self.cfver = 'auto'
 
 		
 '''--------------------------------------------------------------
@@ -138,6 +141,7 @@ class finalSum(object):
 		self.sug = {}
 		self.other = {}
 		self.format = {}
+		self.conv = {}
 		self.total = {}
 		
 	def sum(self, attr, dict2):
@@ -166,9 +170,10 @@ class scoring():
 		self.sug = 0
 		self.other = 0
 		self.format = 0
+		self.conv = 0
 
  	
-	def calc(self, result, nfiles):
+	def calc(self, result, nfiles, nskip):
 		cflist = ['err', 'warn', 'info']
 		for attr, score in self.__dict__.items():
 			for key, item in result.__dict__[attr].items():	
@@ -181,8 +186,14 @@ class scoring():
 						
 				elif key != 'total':
 					score += float(item)/nfiles
+		
+			try:
+				self.__dict__[attr] = score/len(result.__dict__[attr])
 
-			self.__dict__[attr] = round(score/len(result.__dict__[attr]), 2)
+			except ZeroDivisionError:
+				''' Dataset may not contain additional metadata '''
+				print "Zero division error: Empty '", attr, "' dictionary"
+				self.__dict__[attr] = 0
 
 
 
@@ -199,13 +210,10 @@ def main():
 	Get user inputs, initialise queues, and determine number of 
 	processes to split jobs across. 
 	--------------------------------------------------------------'''
-	#filesdir, file, ncpu, detailed_log, fn_out, debug = getinputs()	
 	inputs = getinputs(sys.argv)	
 
 	# Define queues for all the data/metadata reporting
 	# that need saving from each process
-	#q = mp.Queue()
-	#fileList = []
 	run = checkfiles.check()
 	
 	print "Searching directory and subdirectories for '.nc' files..."
@@ -246,7 +254,19 @@ def main():
 	# Get process results from the output queue
 	CF = [run.cf.get() for p in processes]
 	META = [run.meta.get() for p in processes]
+	ERR = [run.fileErr.get() for p in processes]
+	
 
+	# Combine the list of any files that could not be read
+	fileErr = []
+	for proc in range(0, inputs.ncpu):
+		if ERR[proc]:
+			for item in ERR[proc]:
+				fileErr.append(item)
+
+	if len(fileErr) == len(run.fileList):
+		shutil.rmtree(tmpdir)
+		sys.exit("NO FILES COULD BE READ. EXITING.")
 
 	'''--------------------------------------------------------------
 	Sum totals and print output
@@ -275,16 +295,16 @@ def main():
 	Calculate report scoring
 	--------------------------------------------------------------'''	
 	score = scoring()
-	score.calc(results, len(run.fileList))
+	score.calc(results, len(run.fileList), len(fileErr))
 
 	
 	'''--------------------------------------------------------------
 	Print output to report and screen
 	--------------------------------------------------------------'''	
-	log, inputs.fn_out = output.header(inputs.fn_out, inputs.filesdir, inputs.file, len(run.fileList))
+	log, inputs.fn_out = output.header(inputs.fn_out, inputs.filesdir, inputs.file, len(run.fileList), len(fileErr))
 	output.report(results, score, log, len(run.fileList))
 	output.screen(inputs.fn_out)
-	output.append(tmpdir, inputs.fn_out, inputs.log, inputs.ncpu)
+	output.append(tmpdir, inputs.fn_out, inputs.log, inputs.ncpu, fileErr)
 
 
 	'''--------------------------------------------------------------

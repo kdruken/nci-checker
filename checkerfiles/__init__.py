@@ -7,4 +7,4 @@ import multiprocessing as mp
 from datetime import datetime
 
 # Import dependent scrpts for nci-checker.py 
-import output, checkfiles
+import output, checkfiles, cfchecks

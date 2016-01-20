@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#!/Library/Python/2.7/site-packages/cdat_lite-6.0rc2-py2.7-macosx-10.10-intel.egg/
+#!/home/ros/software/CDAT-5.2-cdms/bin/python
 # Adapted for numpy/ma/cdms2 by convertcdms.py
 #-------------------------------------------------------------
 # Name: cfchecks.py
@@ -46,29 +46,26 @@ from cdms2.auxcoord import FileAuxAxis1D
 # Version is imported from the package module cfchecker/__init__.py
 #from cfchecker import __version__
 
-
 # Use ctypes to interface to the UDUNITS-2 shared library
 # The udunits2 library needs to be in a standard path o/w export LD_LIBRARY_PATH
 from ctypes import *
-# On Mac:
-# udunits=CDLL("libudunits2.0.dylib")
+udunits=CDLL("libudunits2.so")
 
 
 '''--------------------------------------------- 
 Modifications made by K.Druken for nci-checker.py 
 '''
-# Not using the '__init__.py' file for nci-checker, so just putting version # here. 
+# Not using the '__init__.py' file for nci-checker, so just putting version # here and have commented 
+# out the line above to import __version__. 
 __version__ = '2.0.9'
 
-# On Linux use the following library name:
-udunits=CDLL("libudunits2.so")
-# On OSX use:
+# On Linux use the udunits listed above but on OS X uncomment and use:
 # udunits=CDLL("libudunits2.0.dylib")
 '''
 ------------------------------------------------
 '''
 
-
+ 
 STANDARDNAME = 'http://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml'
 AREATYPES = 'http://cfconventions.org/Data/area-type-table/current/src/area-type-table.xml'
 
@@ -894,21 +891,20 @@ class CFChecker:
                 if len(self.f[bounds].getAxisIds()) <= 2:
                     varData=self.f[var].getValue()
                     boundsData=self.f[bounds].getValue()
-##                    if len(varData) == 1:
 
-##                    if type(varData) == type(1) or type(varData) == type(1.00) or len(varData) == 1:
+                    try:
+                        length = len(varData)
+                    except TypeError:
+                        length = 1  # scalar (no len); treat as length 1
 
-# 09.05.14
-# Temporary workaround to fix crash when a variable is of type <class 'cdms2.auxcoord.TransientAuxAxis1D'>
-# and len(varData) then returns 0!!!
-                    if len(varData) ==0:
+                    if length == 0:
                         print "WARNING: Problem with variable: '" + var + "' - Skipping check that data lies within cell boundaries."
                         self.warn = self.warn+1
-                 
-                    elif isinstance(varData,(int,long,float,numpy.floating)) or len(varData) == 1:
+                  
+                    elif length == 1:
                         # Gone for belts and braces approach here!!
                         # Variable contains only one value
-                        # Bounds array will be 1 dimensional
+                        # Bounds array will be 1-dimensional
                         if not ((varData <= boundsData[0] and varData >= boundsData[1])
                                 or (varData >= boundsData[0] and varData <= boundsData[1])):
                             print "WARNING (7.1): Data for variable",var,"lies outside cell boundaries"

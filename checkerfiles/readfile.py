@@ -15,20 +15,34 @@ import sys
 import netCDF4 as nc
 
 
-def read(file):
-	f = nc.Dataset(file, 'r')
-	
-	# Read/output netcdf format information (e.g., netCDF3, netCDF4)
-	ncformat = f.file_format
-	if ncformat != f.data_model:
-		print "f.file_format and f.data_model inconsistent"
-	
-	# Read/output global attributes
-	atts = f.ncattrs()
-	
-	# Read/output variables
-	vars = f.variables.keys()
-	# g.groups['obs'].variables.keys()		# Not to self for future group modification
-	
-	return atts, ncformat, vars
+class read(object):
+
+	def __init__(self, file):
+
+		f = nc.Dataset(file, 'r')
+		
+		# Read/output netcdf format information (e.g., netCDF3, netCDF4)
+		self.ncformat = f.file_format
+		if self.ncformat != f.data_model:
+			print "f.file_format and f.data_model inconsistent"
+		
+		# Read/output global attributes
+		self.atts = f.ncattrs()
+		
+		# Read/output variables
+		self.vars = f.variables.keys()
+		# g.groups['obs'].variables.keys()		# Not to self for future group modification
+
+		# Read/output any conventions used (if any)
+		if 'Conventions' in f.ncattrs():
+			self.conv = f.Conventions
+		elif 'conventions' in f.ncattrs():
+			self.conv = f.conventions
+		elif 'Convention' in f.ncattrs():
+			self.conv = f.Convention
+		else:
+			self.conv = '(No Conventions Used)'
+
+
+		#return atts, ncformat, conv, vars
 

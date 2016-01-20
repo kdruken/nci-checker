@@ -30,6 +30,7 @@ class meta_check():
 		self.sug = dict.fromkeys(check_sug(), 0) 
 		self.other = {}
 		self.format = {}
+		self.conv = {}
 	
 	def acddCheck(self, ncattrs):
 		for item in self.req:
@@ -53,11 +54,18 @@ class meta_check():
 			else:
 				self.other[item] = 1
 	
-	def saveFormat(self, format):
+	def fileFormat(self, format):
 		if format in self.format.keys():
 			self.format[format] = self.format[format] + 1
 		else:
 			self.format[format] = 1
+
+	def conventions(self, conv):
+		if conv in self.conv.keys():
+			self.conv[conv] = self.conv[conv] + 1
+		else:
+			self.conv[conv] = 1
+
 				
 								
 
@@ -65,7 +73,6 @@ class meta_check():
 	
 def check_req():
 	return [
-		'Conventions',
 		'title',
 		'summary',
 		'source',
@@ -75,6 +82,7 @@ def check_req():
 
 def check_rec():
 	return [
+		'Conventions',
 		'history',
 		'institution',
 		'license',

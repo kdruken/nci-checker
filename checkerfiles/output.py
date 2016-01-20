@@ -27,11 +27,11 @@ def begin(filesdir, file, ncpu):
 	print ' '
 
 
+
 class tmplog:
 	def __init__(self, cpu, tmpdir):
-		self.fn = open(tmpdir+'/tmp'+str(cpu)+'.log', 'w')	
-		#self.tmpout = tmpdir+'/tmp'+str(cpu)+'.out'
-	
+		self.fn = open(tmpdir+'/tmp'+str(cpu)+'.log', 'w')
+		
 	
 	def header(self, ncfile):
 		print >> self.fn, ''
@@ -41,26 +41,36 @@ class tmplog:
 		print >> self.fn, ''
 		print >> self.fn, ''
 
+
 	def message(self, var, message):
 		print >> self.fn, "{:<10}{:<5}{:<20}".format(var, '', message)
 
 	
-	def meta(self, gatts, ncformat):
-		print >> self.fn, "NetCDF Format: \t", ncformat
-		print >> self.fn, "Global Attributes:"
-		print >> self.fn, gatts
+	def meta(self, gatts, ncformat, conv):
+		print >> self.fn, "NETCDF FILE FORMAT: \t", ncformat, '\n'
+		print >> self.fn, "CONVENTIONS (if any): ", conv, '\n'
+		print >> self.fn, "GLOBAL ATTRIBUTES:", 
+		for item in gatts:
+			print >> self.fn, item, ', ', 
+		print >> self.fn, '\n'
+		print >> self.fn, "CF-CONVENTION OUTPUT: "
 
 
 
-def header(fn_out, filesdir, file, nfiles):
+def header(fn_out, filesdir, file, nfiles, nfilesErr):
 	import time
 	
 	# Print results and logfiles into one output log
-	timestr = time.strftime("%Y%m%d-%H%M")
+	timestr = time.strftime("%Y-%m-%d-%H%M%S")
 	
 	# If no filename specified in inputs, then use this default format
 	if not fn_out:
-		fn_out = '_CFcomplianceLog_'+timestr+'.log'
+		if filesdir:
+			path = filesdir.split("/")
+			fn_out = 'NCI-QC-Report_'+path[3]+'_'+path[-2]+'_'+timestr+'.log'
+		else:
+			fn_out = 'NCI-QC-Report_'+timestr+'.log'
+
 	else:
 		fn_out = fn_out+'_'+timestr+'.log'
 	log = open(fn_out,'w')
@@ -70,6 +80,7 @@ def header(fn_out, filesdir, file, nfiles):
 	elif file:
 		print >>log, 'FILE: ', file
 	print >>log, 'TOTAL FILES CHECKED = ', nfiles
+	print >>log, 'TOTAL FILES SKIPPED = ', nfilesErr
 	print >>log, 'DateTimeStamp: ', timestr
 	print >>log, '='*lw
 	print >>log, ' '
@@ -80,15 +91,37 @@ def header(fn_out, filesdir, file, nfiles):
 
 def report(results, score, log, nfiles):
 	from operator import itemgetter
+	
+	'''
+	----------------------------
+	Determine max column width 
+	----------------------------'''
+	dum = []
+	for item in results.err.keys():
+		dum.append(item)
 
-	''' 
-	------------------------------------
-	CF-Results 
-	------------------------------------''' 
+	for item in results.other.keys():
+		dum.append(item)
+
+	maxwidth = max(len(item) for item in dum)
+
+	if maxwidth > 40:
+		cw = maxwidth
+		lw = maxwidth + 50
+	else:
+		cw = 40
+		lw = 90
+
+
+	'''
+	----------------------------
+	Main Header
+	----------------------------'''
 	print >>log, '_'*lw
-	print >>log, "{0:^90}".format("NCI CF DATA COMPLIANCE REPORT")
+	print >>log, "{:^{n}}".format("NCI CF DATA COMPLIANCE REPORT", n=lw)
 	print >>log, ' '
-	print >>log, 'For help with data compliance, refer to the following CF and ACDD guides: \n'
+	print >>log, 'For help with data compliance, refer to the following Climate and Forecasts (CF) and '
+	print >>log, 'Attribute Convention for Data Discovery (ACDD) guides: \n'
 	print >>log, 'http://cfconventions.org/documents.html '
 	print >>log, 'http://wiki.esipfed.org/index.php/Attribute_Convention_for_Data_Discovery_1-3 '
 	print >>log, ' '
@@ -96,30 +129,76 @@ def report(results, score, log, nfiles):
 	print >>log, 'http://mmisw.org/cfsn/#/ '
 	print >>log, '_'*lw
 	print >>log, ' '
+
+
+
+
+	'''
+	----------------------------
+	Scoring 
+	----------------------------'''
+	print >>log, ''
+	print >>log, "{:^{n}}".format("SCORING (%)", n=lw)
+	print >>log,  '_'*lw
+	print >>log,  ''
+	print >>log,  "{:>30}{:^20}{:^20}{:^20}".format('', 'CF', 'ACDD', 'Completeness')
+	print >>log,  '_'*lw
+	print >>log,  "{:>30}{:^20.0%}{:^20.0%}{:^20}".format('Required', score.err, score.req, '--')
+	print >>log,  ''
+	print >>log,  "{:>30}{:^20.0%}{:^20.0%}{:^20}".format('High-priority', score.warn, score.rec, '--')
+	print >>log,  "{:>30}{:^20.0%}{:^20.0%}{:^20}".format('Low-priority', score.info, score.sug, '--')
+	print >>log,  ''
+	print >>log,  "{:>30}{:^20}{:^20}{:^20.0%}".format('Additional metadata', '--', '--', score.other)
+	print >>log,  "{:>30}{:^20}{:^20}{:^20.0%}".format('File format', '--', '--', score.format)
+	print >>log,  "{:>30}{:^20}{:^20}{:^20.0%}".format('Conventions', '--', '--', score.conv)
+	print >>log,  ''
+	print >>log,  ''
+	print >>log,  ''
+	print >>log,  ''
+
+
+
+
+	''' 
+	------------------------------------
+	CF-Results 
+	------------------------------------''' 
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF-Convention (Required)', '', '# passed', '', 'total files')
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('CF-Convention (Required)', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.err.items(), key=itemgetter(1,0), reverse=False):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', results.total[key])
+		if results.total[key] == 0:
+			score = 0
+		else:
+			score = float(value)/results.total[key]
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', results.total[key], score, n=cw)
 	print >>log, ' '
 	print >>log, ' '
 	
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF-Convention (High Priority)', '', '# passed', '', 'total files')
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('CF-Convention (High Priority)', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.warn.items(), key=itemgetter(1,0), reverse=False):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', results.total[key])
+		if results.total[key] == 0:
+			score = 0
+		else:
+			score = float(value)/results.total[key]
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', results.total[key], score, n=cw)
 	print >>log, ' '
 	print >>log, ' '
 
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('CF-Convention (Low Priority)', '', '# passed', '', 'total files')
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('CF-Convention (Low Priority)', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.info.items(), key=itemgetter(1,0), reverse=False):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', results.total[key])
+		if results.total[key] == 0:
+			score = 0
+		else:
+			score = float(value)/results.total[key]
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', results.total[key], score, n=cw)
 	print >>log, ' '
 	print >>log, ' '
 	print >>log, ' '
@@ -131,37 +210,37 @@ def report(results, score, log, nfiles):
 	Metadata-Results 
 	------------------------------------''' 
 	print >>log, '_'*lw
-	print >>log, "{0:^90}".format("NCI ACDD METADATA COMLIANCE REPORT \n")
+	print >>log, "{:^{n}}".format("NCI ACDD METADATA COMLIANCE REPORT \n", n=lw)
 	print >>log, 'For help with metadata compliance, refer to the ACDD guide: \n'
 	print >>log, 'http://wiki.esipfed.org/index.php/Attribute_Convention_for_Data_Discovery_1-3 '
 	print >>log, '_'*lw
 	print >>log, ' '
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Required Attributes', '', '# passed', '', 'total files')
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('Required Attributes', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.req.items(), key=itemgetter(1,0), reverse=False):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', nfiles, float(value)/nfiles, n=cw)
 	print >>log, ' '
 	print >>log, ' '
 	
 	''' '''
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Highly Recommended Attributes', '', '# passed', '', 'total files')
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('Highly Recommended Attributes', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.rec.items(), key=itemgetter(1,0), reverse=False):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', nfiles, float(value)/nfiles, n=cw)
 	print >>log, ' '
 	print >>log, ' '
 
 	''' ''' 
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Suggested Attributes', '', '# passed', '', 'total files')
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('Suggested Attributes', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.sug.items(), key=itemgetter(1,0), reverse=False):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', nfiles, float(value)/nfiles, n=cw)
 	print >>log, ' '
 	print >>log, ' '
 	
@@ -171,50 +250,36 @@ def report(results, score, log, nfiles):
 	Additional info 
 	------------------------------------''' 
 	print >>log, '_'*lw
-	print >>log, "{0:^90}".format("ADDITIONAL METADATA \n") 
-	print >>log, "{0:<60}".format("The following sections are intended to help highlight the completeness of the additional information included within the scanned files.")
+	print >>log, "{:^{n}}".format("ADDITIONAL METADATA \n", n=lw)
+	print >>log, "The following sections are intended to help highlight the completeness of the additional"
+	print >>log, "information included within the scanned files."
 	print >>log, '_'*lw
 	print >>log, ' '
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('Attribute(s)', '', '# files', '', 'total files')
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('Attribute(s)', '', '# Files', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.other.items(), key=itemgetter(1,0), reverse=False):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', nfiles, float(value)/nfiles, n=cw)
 	print >>log, ' '
 	print >>log, ' '
 	
 	print >>log, '-'*lw
-	print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format('File format(s)', '', '# files', '', 'total files')
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('File format(s)/Conventions', '', '# Files', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.format.items(), key=itemgetter(1,0), reverse=False):
-		print >>log, "{:>40}{:^5}{:^15}{:^2}{:^20}".format(key, '=', value, '/', nfiles)
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', nfiles, float(value)/nfiles, n=cw)
+
+	print >>log, ' '
+	for key, value in sorted(results.conv.items(), key=itemgetter(1,0), reverse=False):
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', nfiles, float(value)/nfiles, n=cw)
 	print >>log, ' '
 	print >>log, ' '
 
 
 
-	'''
-	----------------------------
-	Scoring 
-	----------------------------'''
-	print >>log, '_'*lw
-	print >>log, "{:^90}".format("SCORING")
-	print >>log,  '_'*lw
-	print >>log,  ''
-	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('', 'CF', 'ACDD', 'Completeness')
-	print >>log,  '_'*lw
-	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('Required', score.err, score.req, '--')
-	print >>log,  ''
-	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('High-priority', score.warn, score.rec, '--')
-	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('Low-priority', score.info, score.sug, '--')
-	print >>log,  ''
-	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('Additional metadata', '--', '--', score.other)
-	print >>log,  "{:>20}{:^20}{:^20}{:^20}".format('File format', '--', '--', score.format)
-	print >>log,  ''
-	print >>log,  ''
-	print >>log,  '_'*lw
+
 	
 	
 	log.close()
@@ -227,17 +292,23 @@ def screen(fn_out):
 	print ' '
 	os.system('cat '+fn_out)
 
+	# Reprint scoring at end for easy viewing (lines 20-38)
+	print ''
+	os.system('sed -n 21,39p '+fn_out)
+	
 
 
-def append(tmpdir, fn_out, detailed_log, ncpu):
+
+def append(tmpdir, fn_out, detailed_log, ncpu, fileErr):
 	# Append log with the raw cfchecks.py output if detailed_log == 'y' report
-	log = open(fn_out,'a')
+	
 	if detailed_log == 'y':
+		log = open(fn_out,'a')	
 		print >>log, '\n'*15
 		print >>log, '_'*lw
-		print >>log, "{0:^90}".format("Individual CF Compliance Reports")
+		print >>log, "{:^{n}}".format("Individual CF Compliance Reports", n=lw)
 		print >>log, ' '
-		print >>log, "{0:^90}".format("CF Compliance is checked using the python code developed and maintained by NCAS Computational Modelling Services (NCAS-CMS): \n")
+		print >>log, "{:^{n}}".format("CF Compliance is checked using the python code developed and maintained by NCAS Computational Modelling Services (NCAS-CMS): \n", n=lw)
 		print >>log, 'https://pypi.python.org/pypi/cfchecker/2.0.7 	'
 		print >>log, ' '
 		print >>log, '_'*lw
@@ -245,6 +316,16 @@ def append(tmpdir, fn_out, detailed_log, ncpu):
 	
 		for proc in range(0, ncpu):
 			os.system('cat '+tmpdir+'/tmp'+str(proc)+'.log >> '+fn_out)
-		
-	elif detailed_log == 'n':
-		os.system('rm '+fn_out)
+	
+
+
+	# Print skipped files regardless of report type
+	log = open(fn_out,'a')
+	print >>log, "-"*lw
+	print >>log, "SKIPPED FILES: \n"	
+	for file in fileErr:
+		print >>log, file
+
+
+#	elif detailed_log == 'n':
+#		os.system('rm '+fn_out)
