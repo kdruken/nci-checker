@@ -177,7 +177,7 @@ def report(results, score, log, nfiles):
 	print >>log, ' '
 	
 	print >>log, '-'*lw
-	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('CF-Convention (High Priority)', '', '# Passed', '', 'Total files', 'Score', n=cw)
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('CF-Convention (High-Priority)', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.warn.items(), key=itemgetter(1,0), reverse=False):
@@ -190,7 +190,7 @@ def report(results, score, log, nfiles):
 	print >>log, ' '
 
 	print >>log, '-'*lw
-	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('CF-Convention (Low Priority)', '', '# Passed', '', 'Total files', 'Score', n=cw)
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('CF-Convention (Low-Priority)', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.info.items(), key=itemgetter(1,0), reverse=False):
@@ -209,14 +209,14 @@ def report(results, score, log, nfiles):
 	------------------------------------
 	Metadata-Results 
 	------------------------------------''' 
-	print >>log, '_'*lw
-	print >>log, "{:^{n}}".format("NCI ACDD METADATA COMLIANCE REPORT \n", n=lw)
-	print >>log, 'For help with metadata compliance, refer to the ACDD guide: \n'
-	print >>log, 'http://wiki.esipfed.org/index.php/Attribute_Convention_for_Data_Discovery_1-3 '
-	print >>log, '_'*lw
+#	print >>log, '_'*lw
+#	print >>log, "{:^{n}}".format("NCI ACDD METADATA COMLIANCE REPORT \n", n=lw)
+#	print >>log, 'For help with metadata compliance, refer to the ACDD guide: \n'
+#	print >>log, 'http://wiki.esipfed.org/index.php/Attribute_Convention_for_Data_Discovery_1-3 '
+#	print >>log, '_'*lw
 	print >>log, ' '
 	print >>log, '-'*lw
-	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('Required Attributes', '', '# Passed', '', 'Total files', 'Score', n=cw)
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('ACDD Convention (Required)', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.req.items(), key=itemgetter(1,0), reverse=False):
@@ -226,7 +226,7 @@ def report(results, score, log, nfiles):
 	
 	''' '''
 	print >>log, '-'*lw
-	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('Highly Recommended Attributes', '', '# Passed', '', 'Total files', 'Score', n=cw)
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('ACDD Convention (High-Priority)', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.rec.items(), key=itemgetter(1,0), reverse=False):
@@ -236,7 +236,7 @@ def report(results, score, log, nfiles):
 
 	''' ''' 
 	print >>log, '-'*lw
-	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('Suggested Attributes', '', '# Passed', '', 'Total files', 'Score', n=cw)
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('ACDD Convention (Low-Priority)', '', '# Passed', '', 'Total files', 'Score', n=cw)
 	print >>log, '-'*lw
 	print >>log, ' '
 	for key, value in sorted(results.sug.items(), key=itemgetter(1,0), reverse=False):

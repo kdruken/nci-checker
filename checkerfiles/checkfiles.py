@@ -142,9 +142,10 @@ class check:
 
 				# This part executes the checker part of cfchecks.py and redirects output to tmpfile
 				# If for any reason a file can't be read, keep track of that 
+				rc = []
 				with redirected(stdout=tmpfile):
 					try:
-						rc = inst.checker(ncfile)
+						inst.checker(ncfile)
 					except:
 						rc = 0
 				
