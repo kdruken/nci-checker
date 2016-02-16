@@ -11,11 +11,11 @@ NCI compliance checker for netCDF datasets. Checks files or directory of files a
 
 	--help 		Print this usage message and exit
 	--dir 		Specifiy before directory to check entire contents
-	--np 		  Specifiy the number of python multiprocesses 
-			      to use (default np = 8)
+	--np 		Specifiy the number of python multiprocesses 
+			to use (default np = 8)
 	--log 		Save detailed output
 	--brief 	Save brief summary output
-	--fn 		  Specify prefix of log/brief filename (default = datetimestamp)
+	--fn 		specify prefix of log/brief filename (default = datetimestamp)
 	--debug		Do not delete the tmp files for debugging
 
 
@@ -29,58 +29,61 @@ NCI compliance checker for netCDF datasets. Checks files or directory of files a
 
 
 ## Installing on NCI's Virtual Desktop Infrastructure (VDI)
-Virtual python environments are highly recommended due to the libraries that can sometimes conflict with UV-CDAT. Instructions for setting up a virtual environment with 'virtualenv' listed below. If not using a virtual environment, make sure the required dependencies are installed and skip to step #8. 
+Virtual python environments are highly recommended due to the libraries that can sometimes conflict with UV-CDAT. Instructions for setting up a virtual environment with 'virtualenv' listed below. If not using a virtual environment, make sure the required dependencies are installed and skip to **"Download nci-checker"**. 
 
-### Setting up a virtual environment
 
-1. Load the following modules (using `$ module load`): 
+### Required VDI modules
+
+Load the following modules (using `$ module load`): 
+  - uvcdat
+  - udunits
   - python/2.7.5
   - virtualenv/1.11.4-py2.7 
   - netcdf/4.3.3.1
   - hdf5/1.8.14
   - szip/2.1
 
+**Notes**: 
+- The first 3 modules are always required when running the checker while the netCDF, HDF5, and szip libraries are only needed on the initial install for the netCDF4 python package.
+- `python` and `uvcdat` modules have conflicting dependencies. Order therefore matters and `uvcdat` has to be loaded prior to `python`. 
 
-2. Make a directory for the virtualenv:
+
+
+### Setting up a virtual environment
+
+1. Make a directory for the virtualenv:
 
   `$ mkdir <directory>`
 
 
-3. Create the virtualenv inside this new directory. 
-
-  `$ cd <directory> `
-  `$ virtualenv <venv>`
+2. Create the virtualenv inside this new directory. 
+   
+  - `$ cd <directory> `
+  - `$ virtualenv <venv>`
 
 
 
 ### Setting up dependencies inside the virtual environment
 
-4. Load the following modules (using `$ module load`): 
-  - python/2.7.5
-  - netcdf/4.3.3.1
-  - hdf5/1.8.14
-  - szip/2.1
-
-
-5. Activate the virtual environment:
+1. Activate the virtual environment:
 
   `$ source <directory>/<venv>/bin/activate`
   
 
-6. Install dependencies with pip: 
+2. Install dependencies with pip: 
 
   - `$ pip install numpy`
-  - `$ pip install netcdf4`
+  - `$ pip install --no-deps netcdf4` (**Note**: the `--no-deps` flag is needed because `netcdf4` otherwise tries to build against the outdated `numpy` from the `uvcdat` module)
 
 
-7. To deactivate the virtual environment:
+3. To deactivate the virtual environment:
 
   `$ deactivate`
 
 
 ### Download **nci-checker**
 
-8. Clone the git repository: 
+1. Clone the git repository: 
 
   `$ git clone https://github.com/kdruken/nci-checker.git`
   
@@ -88,7 +91,12 @@ Virtual python environments are highly recommended due to the libraries that can
 
 ## Using **nci-checker** 
 
-If using a virtual environment, first load the python module (`$ module load python`) and then activate (`$ source <directory>/<venv>/bin/activate`). 
+If using a virtual environment, first load the required modules (remember order matters with `uv-cdat` and `python`) and then activate the virtual environment. 
+
+- `$ module load uvcdat` 
+- `$ module load udunits` 
+- `$ module load python` 
+- `$ source <directory>/<venv>/bin/activate`
 
 
 **To check a single file:**
@@ -101,7 +109,11 @@ If using a virtual environment, first load the python module (`$ module load pyt
 `$ python nci-checker.py --dir <directory>`
 
 
-The default number of python multiprocesses is np = 8 but will automatically detect if less are needed. To specify a larger number use the ‘--np’ option followed by desired number. To save the report, use the ‘--brief’ or ‘--log’ options. The latter will produce a full report including individual file CF-Compliance outputs. 
+The default number of python multiprocesses is np = 8 but will automatically detect if less are needed. To specify a larger number use the ‘--np’ option followed by desired number. 
 
 
+**To save reports:**
 
+Add the `--log` or `--brief` flags. The `--log` will append the report with the CF and metadata information from each individual file scanned while `--brief` will save just the summary report. 
+
+`$ python nci-checker.py --dir <directory> --log` 
