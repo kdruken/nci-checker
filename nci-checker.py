@@ -6,8 +6,6 @@
 Date Created:   20-Nov-2015
 Version: 4
 
-Last modified:  20-Nov-2015
-
 
 ---------------------------------------------------------------
 Non-standard Dependencies:
