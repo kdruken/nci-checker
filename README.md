@@ -15,7 +15,6 @@ NCI compliance checker for netCDF datasets. Checks files or directory of files a
 			to use (default np = 8)
 	--log 		Save detailed output
 	--brief 	Save brief summary output
-	--fn 		specify prefix of log/brief filename (default = datetimestamp)
 	--debug		Do not delete the tmp files for debugging
 
 
@@ -97,6 +96,10 @@ If using a virtual environment, first load the required modules (remember order 
 - `$ module load udunits` 
 - `$ module load python` 
 - `$ source <directory>/<venv>/bin/activate`
+
+For convenience, these module loads and virtual environment activation can be combined into a simple shell script. For easy execution of the checker from any location, add the following alias to .sh file as well:
+
+`alias ncichecker="<path_to_the_nci-checker_executable>/nci-checker.py"`
 
 
 **To check a single file:**
