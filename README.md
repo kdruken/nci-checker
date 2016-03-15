@@ -72,7 +72,7 @@ Load the following modules (using `$ module load`):
 
 2. Install dependencies with pip: 
 
-  - `$ pip install numpy`
+  - `$ pip install numpy` (**Note**: try using '--ignore-installed' if a message about 'Requirement already statisfied' is displayed)
   - `$ pip install --no-deps netcdf4` (**Note**: the `--no-deps` flag is needed because `netcdf4` otherwise tries to build against the outdated `numpy` from the `uvcdat` module)
 
 
