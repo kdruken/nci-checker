@@ -57,22 +57,19 @@ class tmplog:
 
 
 
-def header(fn_out, filesdir, file, nfiles, nfilesErr):
+def header(workdir, filesdir, file, nfiles, nfilesErr):
 	import time
 	
 	# Print results and logfiles into one output log
 	timestr = time.strftime("%Y-%m-%d-%H%M%S")
 	
-	# If no filename specified in inputs, then use this default format
-	if not fn_out:
-		if filesdir:
-			path = filesdir.split("/")
-			fn_out = 'NCI-QC-Report_'+path[3]+'_'+path[-2]+'_'+timestr+'.log'
-		else:
-			fn_out = 'NCI-QC-Report_'+timestr+'.log'
-
+	# Output log 
+	if filesdir:
+		path = filesdir.split("/")
+		fn_out = workdir+'/NCI-QC-Report_'+path[3]+'_'+path[-2]+'_'+timestr+'.log'
 	else:
-		fn_out = fn_out+'_'+timestr+'.log'
+		fn_out = workdir+'/NCI-QC-Report_'+timestr+'.log'
+
 	log = open(fn_out,'w')
 	print >>log, '='*lw
 	if filesdir:

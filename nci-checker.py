@@ -18,7 +18,7 @@ Initial setup:
     might need to be added on your system. The 'udunits' 
     library name may also need modification if using on OSX. 
     See the 'cfchecks.py' included in checkerfiles/ and 
-    comment/uncomment appropriate line for your system. 
+    comment/uncomment appropriate line for your system.
  
 --------------------------------------------------------------
 '''
@@ -44,7 +44,6 @@ def help():
 			to use (default np = 8)
 	--log 		Save detailed output
 	--brief 	Save brief summary output
-	--fn 		Specify prefix of log/brief filename (default = datetimestamp)
 	--debug		Do not delete the tmp files for debugging
 
 	'''
@@ -96,11 +95,6 @@ class getinputs(object):
 		else:
 			self.log = 'n'
 			
-		# '--fn' specifies log file name (not required)
-		if argv.count('--fn') == 1:
-			self.fn_out = str(argv[argv.index('--fn')+1])
-		else:
-			self.fn_out = []
 
 		# '--debug': flag for debugging, leaves tmp files
 		if argv.count('--debug') == 1:
@@ -202,7 +196,8 @@ def main():
 	start_time = datetime.now()
 
 	# Make a temporary directory
-	tmpdir = tempfile.mkdtemp(prefix='tmp', dir='.')
+	workdir = os.path.dirname(os.path.abspath(__file__))
+	tmpdir = tempfile.mkdtemp(prefix='tmp', dir=workdir)
 
 	'''--------------------------------------------------------------
 	Get user inputs, initialise queues, and determine number of 
@@ -299,7 +294,7 @@ def main():
 	'''--------------------------------------------------------------
 	Print output to report and screen
 	--------------------------------------------------------------'''	
-	log, inputs.fn_out = output.header(inputs.fn_out, inputs.filesdir, inputs.file, len(run.fileList), len(fileErr))
+	log, inputs.fn_out = output.header(workdir, inputs.filesdir, inputs.file, len(run.fileList), len(fileErr))
 	output.report(results, score, log, len(run.fileList))
 	output.screen(inputs.fn_out)
 	output.append(tmpdir, inputs.fn_out, inputs.log, inputs.ncpu, fileErr)
