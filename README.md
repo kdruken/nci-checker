@@ -22,7 +22,7 @@ NCI compliance checker for netCDF datasets. Checks files or directory of files a
 ## Dependencies:
 - Python 2.7.x
 - netCDF4
-- cdms2 (part of UV-CDAT)
+- cdms2 (part of cdat-lite)
 - UDUNITS-2 package (http://www.unidata.ucar.edu/software/udunits)
 
 
@@ -34,7 +34,6 @@ Virtual python environments are highly recommended due to the libraries that can
 ### Required VDI modules
 
 Load the following modules (using `$ module load`): 
-  - uvcdat
   - udunits
   - python/2.7.5
   - virtualenv/1.11.4-py2.7 
@@ -43,8 +42,7 @@ Load the following modules (using `$ module load`):
   - szip/2.1
 
 **Notes**: 
-- The first 3 modules are always required when running the checker while the netCDF, HDF5, and szip libraries are only needed on the initial install for the netCDF4 python package.
-- `python` and `uvcdat` modules have conflicting dependencies. Order therefore matters and `uvcdat` has to be loaded prior to `python`. 
+- The first 2 modules are always required when running the checker while the netCDF, HDF5, and szip libraries are only needed on the initial install for the netCDF4 python package.
 
 
 
@@ -72,7 +70,8 @@ Load the following modules (using `$ module load`):
 2. Install dependencies with pip: 
 
   - `$ pip install numpy` (**Note**: try using '--ignore-installed' if a message about 'Requirement already statisfied' is displayed)
-  - `$ pip install --no-deps netcdf4` (**Note**: the `--no-deps` flag is needed because `netcdf4` otherwise tries to build against the outdated `numpy` from the `uvcdat` module)
+  - `$ pip install netcdf4`
+  - `$ pip install cdat-lite` (**Note**: this package is needed for the 'cdms2' library)
 
 
 3. To deactivate the virtual environment:
@@ -90,9 +89,8 @@ Load the following modules (using `$ module load`):
 
 ## Using **nci-checker** 
 
-If using a virtual environment, first load the required modules (remember order matters with `uv-cdat` and `python`) and then activate the virtual environment. 
+If using a virtual environment, first load the required modules and then activate the virtual environment. 
 
-- `$ module load uvcdat` 
 - `$ module load udunits` 
 - `$ module load python` 
 - `$ source <directory>/<venv>/bin/activate`
