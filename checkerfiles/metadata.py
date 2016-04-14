@@ -36,8 +36,7 @@ import netCDF4 as nc
 class read(object):
 
 	def __init__(self, file):
-
-		#f = nc.Dataset(file, 'r')
+		
 		with nc.Dataset(file, 'r') as f:
 			# Read/output netcdf format information (e.g., netCDF3, netCDF4)
 			self.ncformat = f.file_format
@@ -49,7 +48,10 @@ class read(object):
 			
 			# Read/output variables and dimensions
 			self.dims = f.dimensions.keys()
-			self.vars = f.variables.keys()
+			self.vars = {}
+			for var in f.variables:
+				self.vars[var] = f[var].__dict__
+
 			# g.groups['obs'].variables.keys()		# Not to self for future group modification
 
 			# Read/output any conventions used (if any)
@@ -61,7 +63,6 @@ class read(object):
 				self.conv = f.Convention
 			else:
 				self.conv = '(No Conventions Used)'
-
 
 
 
@@ -82,8 +83,9 @@ class meta_check():
 		self.other = {}
 		self.format = {}
 		self.conv = {}
-		self.nci = {'crs_defined': 0, 'crs_not_applicable': 0, 'coordinate_attr': 0, 'coordinate_vars_defined': 0}
-	
+		self.nciNotes = {'crs_defined': 0, 'crs_not_applicable': 0, 'coordinates_attr': 0, 'coordinate_variables_defined': 0, 'more_than_one_standard_name': 0}
+
+			
 	def acddCheck(self, ncattrs):
 		for item in self.req:
 			if item in ncattrs:
@@ -106,11 +108,16 @@ class meta_check():
 			else:
 				self.other[item] = 1
 	
+
+
 	def fileFormat(self, format):
 		if format in self.format.keys():
 			self.format[format] += 1
 		else:
 			self.format[format] = 1
+
+
+
 
 	def conventions(self, conv):
 		if conv in self.conv.keys():
@@ -119,29 +126,43 @@ class meta_check():
 			self.conv[conv] = 1
 
 
+
+
 	def spatialCheck(self, ncvars):
 		spatial = 'no'
 		coordattr = 'no'
 		crs = 'no'
-		for variable in ncvars:
+		for variable in ncvars.keys():
 			if variable.lower() in ['lat', 'lon', 'latitude', 'longitude']:		
 				spatial = 'yes'
-			if 'coordinates' in variable.ncattrs():
+			if 'coordinates' in ncvars[variable].keys():
 				coordattr = 'yes'
 			if variable.lower() == 'crs':
 				crs = 'yes'
 
 		# Record if crs information included or if not relevant
 		if spatial == 'yes' and crs == 'yes':
-			self.nci['crs_defined'] += 1
+			self.nciNotes['crs_defined'] += 1
 		elif spatial == 'no':
-			self.nci['crs_not_applicable'] += 1
+			self.nciNotes['crs_not_applicable'] += 1
 
 		# Record whether any variables contain the 'coordinates' attribute
 		# (Note- this is only important for gridded data in the case of some
 		#  tool. In particular, netcdfSubset in THREDDS.)
 		if coordattr == 'yes':
-			self.nci['coordinate_attr'] += 1
+			self.nciNotes['coordinates_attr'] += 1
+
+
+	def stdnamesCheck(self, ncvars):
+		stdnames = {}
+		for variable in ncvars.keys():
+			if 'standard_name' in ncvars[variable].keys():
+				value = ncvars[variable]['standard_name']
+				if value not in stdnames.keys():
+					stdnames[value] = 1
+				else:
+					self.nciNotes['more_than_one_standard_name'] = 1
+					break
 
 
 	def coordvarCheck(self, ncdims, ncvars):
@@ -149,9 +170,8 @@ class meta_check():
 		for dim in ncdims:
 			if dim in ncvars:
 				i += 1
-
-		if i == len(dims):
-			self.nci['coordinate_vars_defined'] += 1	
+		if i == len(ncdims):
+			self.nciNotes['coordinate_variables_defined'] += 1	
 		
 		
 

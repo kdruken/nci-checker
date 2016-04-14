@@ -19,6 +19,7 @@ def help():
 	--dir 		Specifiy before directory to check entire contents
 	--np 		Specifiy the number of python multiprocesses 
 			to use (default np = 8)
+	--nf		Number (or 'all') of files to check (default = 1)
 	--log 		Save detailed output
 	--brief 	Save brief summary output
 	--debug		Do not delete the tmp files for debugging

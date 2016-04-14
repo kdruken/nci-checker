@@ -65,7 +65,7 @@ class tmplog:
 '''--------------------------------------------------------------
 Print the report header
 --------------------------------------------------------------'''
-def header(workdir, path, nfiles, nfilesErr):
+def header(workdir, path, nfiles, nskipped):
 	import time
 	
 	# Print results and logfiles into one output log
@@ -85,11 +85,12 @@ def header(workdir, path, nfiles, nfilesErr):
 	else:
 		print >>log, 'FILE: ', path
 	print >>log, 'TOTAL FILES CHECKED = ', nfiles
-	print >>log, 'TOTAL FILES SKIPPED = ', nfilesErr
+	print >>log, 'TOTAL FILES SKIPPED = ', nskipped
 	print >>log, 'DateTimeStamp: ', timestr
 	print >>log, '='*lw
 	print >>log, ' '
 	print >>log, ' '
+
 
 	return log, fn_out
 
@@ -111,7 +112,8 @@ class finalSum(object):
 		self.format = {}
 		self.conv = {}
 		self.total = {}
-		self.nci = {}
+		self.nciNotes = {}
+		self.skipped = []
 		
 	def sum(self, attr, dict2):
 		dict1 = self.__dict__[attr]
@@ -138,11 +140,12 @@ class scoring():
 		self.other = 0
 		self.format = 0
 		self.conv = 0
-		self.nci = 0
+		self.nciNotes = 0
 
  	
-	def calc(self, result, nfiles, nskip):
+	def calc(self, result, nfiles):
 		cflist = ['err', 'warn', 'info']
+		nskip = len(result.skipped)
 		for attr, score in self.__dict__.items():
 			for key, item in result.__dict__[attr].items():	
 				if attr in cflist:
@@ -153,7 +156,7 @@ class scoring():
 						score = 0
 						
 				elif key != 'total':
-					score += float(item)/nfiles
+					score += float(item)/(nfiles-nskip)
 		
 			try:
 				self.__dict__[attr] = score/len(result.__dict__[attr])
@@ -161,7 +164,10 @@ class scoring():
 			except ZeroDivisionError:
 				''' Dataset may not contain additional metadata '''
 				print "Zero division error: Empty '", attr, "' dictionary"
-				self.__dict__[attr] = 'n/a'
+				if attr == 'other':
+					self.__dict__[attr] = 'n/a'
+				else:
+					self.__dict__[attr] = 0
 
 
 	
@@ -330,7 +336,7 @@ def report(results, score, log, nfiles, filetypes):
 	Additional info 
 	------------------------------------''' 
 	print >>log, '_'*lw
-	print >>log, "{:^{n}}".format("ADDITIONAL GLOBAL METADATA \n", n=lw)
+	print >>log, "{:^{n}}".format("ADDITIONAL METADATA \n", n=lw)
 	print >>log, "The following sections are intended to help highlight the completeness of the additional"
 	print >>log, "information included within the scanned files."
 	print >>log, '_'*lw
@@ -358,25 +364,42 @@ def report(results, score, log, nfiles, filetypes):
 	print >>log, ' '
 
 
+	
+	''' Append with NCI-specific things to report '''
+	print >>log, ' '
+	print >>log, ' '
+	print >>log, '_________________'
+	print >>log, 'FOR NCI USE: '
+	print >>log, '_________________'
+	print >>log, ' '
+	
+	# Skipped files
+	print >>log, "SKIPPED FILES: \n"	
+	for file in results.skipped:
+		print >>log, file
+	print >>log, ' '
+	print >>log, ' '
+
+
         # Filetypes
-        print >>log, '-'*lw
-        print >>log, "{:>{n}}{:^5}{:>15}{:^2}{:>15}{:^15}".format('File Types Overview', '', '# Files', '', 'Capacity (Gb)', '', '', n=cw)
-        print >>log, '-'*lw
+        print >>log, 'OVERVIEW OF SCANNED FILE TYPES: '
+        print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('', '', '# Files', '', 'Capacity (Gb)', '', '', n=cw)
+        #print >>log, '-'*lw
         print >>log, ' '
         for key, value in sorted(filetypes.items(), key=itemgetter(1), reverse=True):
                 print >>log, "{:>{n}}{:^5}{:>15}{:^2}{:>12.1f}{:^15}".format(key, '=', value['count'], '', value['size']/1e9, '', n=cw)
 
         print >>log, ' '
+	print >>log, ' '
 
 
-#        # Additional NCI-specific info for spatial info and reminders for other services checks
-#	print >>log, '-'*lw
-#	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('Additional checks', '', '# Files', '', 'Total files', 'Score', n=cw)
-#	print >>log, '-'*lw
-#	print >>log, ' '
-#	for key, value in sorted(results.nci.items(), key=itemgetter(1,0), reverse=False):
-#		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', nfiles, float(value)/nfiles, n=cw)
-
+	print >>log, 'OTHER NCI CHECKS: '
+	print >>log, ' '
+	print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15}".format('', '', '# Files', '', 'Total files', 'Score', n=cw)
+	print >>log, ' '
+	for key, value in sorted(results.nciNotes.items(), key=itemgetter(1,0), reverse=False):
+		print >>log, "{:>{n}}{:^5}{:^15}{:^2}{:^15}{:^15.0%}".format(key, '=', value, '/', nfiles, float(value)/nfiles, n=cw)
+	
 	
 	log.close()
 
@@ -398,7 +421,7 @@ def screen(fn_out):
 Append the output file with the cfchecks.py output (details
 the CF compliance messages per file) 
 --------------------------------------------------------------'''
-def append(tmpdir, fn_out, detailed_log, ncpu, fileErr):
+def append(tmpdir, fn_out, detailed_log, ncpu):
 
 	# Append log with the raw cfchecks.py output if detailed_log == 'y' report
 	if detailed_log == 'y':
@@ -417,13 +440,6 @@ def append(tmpdir, fn_out, detailed_log, ncpu, fileErr):
 			os.system('cat '+tmpdir+'/tmp'+str(proc)+'.log >> '+fn_out)
 	
 
-
-	# Print skipped files regardless of report type
-	log = open(fn_out,'a')
-	print >>log, "-"*lw
-	print >>log, "SKIPPED FILES: \n"	
-	for file in fileErr:
-		print >>log, file
 
 	
 

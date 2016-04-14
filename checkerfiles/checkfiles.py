@@ -48,7 +48,7 @@ class check:
 		self.cf = mp.Queue()
 		self.meta = mp.Queue()
 		self.fileList = []
-		self.fileErr = mp.Queue()
+		self.skipped = mp.Queue()
 		self.filetypes = {} # {'nc':{'capacity':0, 'count':0}}
 	
 	
@@ -71,13 +71,13 @@ class check:
 				del self.fileList[nf:]
 			else:
 				if len(self.fileList) > 1:
-					ask = raw_input('More than '+str(1)+' .nc file found. Check more of the '+str(len(self.fileList))+' files found? (y/n)  ')
+					ask = raw_input('More than '+str(1)+' .nc file found. Check more of the '+str(len(self.fileList))+' files found? (y/n)')
 					if ask == 'y':
 						limit = raw_input("How many total? (enter # of files or 'a' for all): ")
 						if limit.isdigit() == True:
 							del self.fileList[int(limit):]
 					else:
-						del self.fileList[limit:]
+						del self.fileList[1:]
 		
 		
 
@@ -107,7 +107,7 @@ class check:
 
 		# Initialise counters	
 		kk = 0
-		fileErr = []
+		skipped = []
 
 		# Create tmp log for this process
 		tmplog = output.tmplog(cpu, tmpdir)
@@ -136,7 +136,7 @@ class check:
 			
 			# Initialise CF and ACDD lists on first loop then check 
 			# if variables the same between each file on subsequent loops.
-			cf.newvars(f.vars)
+			cf.newvars(f.vars.keys())
 							
 		
 			# ACDD Compliance Check
@@ -148,8 +148,9 @@ class check:
 			meta.conventions(f.conv)
 
 			# Check for coordinate variables and spatial info
-			#meta.spatialCheck(f.vars)		
-			#meta.coordvarCheck(f.dims.keys(), f.vars.keys())
+			meta.spatialCheck(f.vars)		
+			meta.coordvarCheck(f.dims, f.vars.keys())
+			meta.stdnamesCheck(f.vars)
 			'''
 			-------------------------------------------------------
 			Wrapper for CF-Convention 'cfchecks.py' 
@@ -178,7 +179,7 @@ class check:
 			if rc == 0:
 				print 'Unexpected error: ', sys.exc_info()[0], sys.exc_info()[1]
 				print '\nFILE: '+ncfile+' [SKIPPING FILE]\n'
-				fileErr.append(ncfile)
+				skipped.append(ncfile)
 
 			cf.wrapper(tmplog, tmpfile)	
 					
@@ -191,7 +192,7 @@ class check:
 		#try:					
 		self.meta.put(meta)
 		self.cf.put(cf)
-		self.fileErr.put(fileErr)
+		self.skipped.put(skipped)
 		print 'Process: '+str(cpu)+' completed.'
 
 

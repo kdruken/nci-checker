@@ -87,7 +87,7 @@ def main():
 		# Get process results from the output queue
 		CF = [run.cf.get() for p in processes]
 		META = [run.meta.get() for p in processes]
-		ERR = [run.fileErr.get() for p in processes]
+		ERR = [run.skipped.get() for p in processes]
 	
 	except KeyboardInterrupt:
 		for p in processes:
@@ -96,36 +96,48 @@ def main():
 		print 'Removing temp files...'
 		shutil.rmtree(tmpdir)
 		print 'Done.'
-		sys.exit('Opps something happened- ending processes, removing files, and exiting...')
+		sys.exit('Opps! You killed it- ending processes, removing files, and exiting...')
 	
 	except:
 		print "Unexpected error: ", sys.exc_info()[0], sys.exc_info()[1]
+		for p in processes:
+			p.terminate()
+		shutil.rmtree(tmpdir)
 		sys.exit('Exiting.')
 
 
 
-	# Combine the list of any files that could not be read
-	fileErr = []
-	for proc in range(0, inputs.ncpu):
-		if ERR[proc]:
-			for item in ERR[proc]:
-				fileErr.append(item)
 
-	if len(fileErr) == len(run.fileList):
-		shutil.rmtree(tmpdir)
-		sys.exit("NO FILES COULD BE READ. EXITING.")
 
 	'''--------------------------------------------------------------
 	Sum totals and print output
 	--------------------------------------------------------------'''
 	results = output.finalSum()
+
+	# Combine the list of any files that could not be read
+	for proc in range(0, inputs.ncpu):
+		if ERR[proc]:
+			for item in ERR[proc]:
+				results.skipped.append(item)
+
+	if len(results.skipped) == len(run.fileList):
+		shutil.rmtree(tmpdir)
+		sys.exit("NO FILES COULD BE READ. EXITING.")
+
+	for proc in range(0, inputs.ncpu):
+		print proc
+		print META[proc].nciNotes
+
 	for proc in range(0, inputs.ncpu):
 		for attr in results.__dict__.keys():
 			try:
 				if attr in ['err', 'warn', 'info', 'total']:
 					results.sum(attr, CF[proc].__dict__[attr])
 				else:
-					results.sum(attr, META[proc].__dict__[attr])
+					if attr == 'skipped':
+						pass
+					else:
+						results.sum(attr, META[proc].__dict__[attr])
 	
 			except AttributeError:						
 				''' 
@@ -142,16 +154,16 @@ def main():
 	Calculate report scoring
 	--------------------------------------------------------------'''	
 	score = output.scoring()
-	score.calc(results, len(run.fileList), len(fileErr))
+	score.calc(results, len(run.fileList))
 
 	
 	'''--------------------------------------------------------------
 	Print output to report and screen
 	--------------------------------------------------------------'''	
-	log, inputs.fn_out = output.header(workdir, inputs.path, len(run.fileList), len(fileErr))
+	log, inputs.fn_out = output.header(workdir, inputs.path, len(run.fileList), len(results.skipped))
 	output.report(results, score, log, len(run.fileList), run.filetypes)
 	output.screen(inputs.fn_out)
-	output.append(tmpdir, inputs.fn_out, inputs.log, inputs.ncpu, fileErr)
+	output.append(tmpdir, inputs.fn_out, inputs.log, inputs.ncpu)
 
 
 	'''--------------------------------------------------------------
