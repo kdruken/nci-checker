@@ -13,9 +13,10 @@ NCI compliance checker for netCDF datasets. Checks files or directory of files a
 	--dir 		Specifiy before directory to check entire contents
 	--np 		Specifiy the number of python multiprocesses 
 			to use (default np = 8)
-	--log 		Save detailed output
-	--brief 	Save brief summary output
-	--debug		Do not delete the tmp files for debugging
+	--nf		Number (or 'all') of files to check (default = 1)
+	--log 		Save detailed output including the CF information 
+			(default output is a brief summary)
+	--debug		Keep tmp files for debugging
 
 
 
@@ -113,8 +114,8 @@ For convenience, these module loads and virtual environment activation can be co
 The default number of python multiprocesses is np = 8 but will automatically detect if less are needed. To specify a larger number use the ‘--np’ option followed by desired number. 
 
 
-**To save reports:**
+**To save detailed reports:**
 
-Add the `--log` or `--brief` flags. The `--log` will append the report with the CF and metadata information from each individual file scanned while `--brief` will save just the summary report. 
+By default a brief summary report is saved but the `--log` option will append the CF and metadata information from each individual file.
 
 `$ python nci-checker.py --dir <directory> --log` 

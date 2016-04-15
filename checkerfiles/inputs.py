@@ -20,9 +20,9 @@ def help():
 	--np 		Specifiy the number of python multiprocesses 
 			to use (default np = 8)
 	--nf		Number (or 'all') of files to check (default = 1)
-	--log 		Save detailed output
-	--brief 	Save brief summary output
-	--debug		Do not delete the tmp files for debugging
+	--log 		Save detailed output including the CF information 
+			(default output is a brief summary)
+	--debug		Keep tmp files for debugging
 
 	'''
 

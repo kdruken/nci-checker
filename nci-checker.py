@@ -33,15 +33,15 @@ def main():
 	
 	start_time = datetime.now()
 
-	# Make a temporary working directory
-	workdir = os.path.dirname(os.path.abspath(__file__))
-	tmpdir = tempfile.mkdtemp(prefix='tmp', dir=workdir)
-
 	'''--------------------------------------------------------------
 	Get user inputs, initialise queues, and determine number of 
 	processes to split jobs across. 
 	--------------------------------------------------------------'''
 	inputs = getinputs(sys.argv)	
+
+	# Make a temporary working directory
+	workdir = os.path.dirname(os.path.abspath(__file__))
+	tmpdir = tempfile.mkdtemp(prefix='tmp', dir=workdir)
 
 	# Define queues for all the data/metadata reporting
 	# that need saving from each process
