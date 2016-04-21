@@ -60,9 +60,9 @@ class getinputs(object):
 			
 		# '--np' specifies the number of processes to run, default is np=8
 		if argv.count('--np') == 1:
-			self.ncpu = int(argv[argv.index('--np')+1])
+			self.ncpu = int(argv[argv.index('--np')+1]) 
 		else:
-			self.ncpu = 8
+			self.ncpu = 7
 		
 		# '--log' or '--brief' specifies long/short log option of output
 		if argv.count('--log') == 1:

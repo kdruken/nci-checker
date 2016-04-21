@@ -53,7 +53,7 @@ def main():
 
 	# If number of files is less than requested 'np', reduce to np = total # files
 	if inputs.ncpu > len(run.fileList):
-		inputs.ncpu = len(run.fileList)
+		inputs.ncpu = len(run.fileList) - 1
 
 
 	'''--------------------------------------------------------------
@@ -124,9 +124,6 @@ def main():
 		shutil.rmtree(tmpdir)
 		sys.exit("NO FILES COULD BE READ. EXITING.")
 
-	for proc in range(0, inputs.ncpu):
-		print proc
-		print META[proc].nciNotes
 
 	for proc in range(0, inputs.ncpu):
 		for attr in results.__dict__.keys():
