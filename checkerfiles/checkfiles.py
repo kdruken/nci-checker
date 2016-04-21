@@ -13,8 +13,6 @@ import os, sys
 import metadata, output, cfwrapper, findfiles
 from cfchecks import CFVersion, CFChecker
 from contextlib import contextmanager
-import resource
-from guppy import hpy
 
 
 STANDARDNAME = 'http://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml'
@@ -123,7 +121,6 @@ class check:
 				# Try to get a file off the file queue, if successful continue
 				ncfile = self.fileQueue.get()
 				print "{:<14}{:^5}{:<15}{:>15}{:^5}".format('[PROCESS: **', cpu, ' **]', 'Checking file: ', kk+1)
-				print resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
 			except:
 				break	
 
