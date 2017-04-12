@@ -34,7 +34,7 @@ def explore_path(path):
 
 
 
-def parallel_worker(i, unsearched, found):
+def parallel_worker(i, unsearched, found, ignore):
 	scan = WhatIsHere()
 	while True:
 		if unsearched.empty() == False:
@@ -43,7 +43,10 @@ def parallel_worker(i, unsearched, found):
 			for file in files:
 				scan.add(file)
 				if file.endswith('.nc'):
-					scan.ncfiles.append(file)
+					if ignore == None:
+						scan.ncfiles.append(file)
+					elif os.path.dirname(file).startswith(ignore) == False:
+						scan.ncfiles.append(file)
 
 			for newdir in dirs:
 				unsearched.put(newdir)
@@ -56,7 +59,7 @@ def parallel_worker(i, unsearched, found):
 	found.put(scan)
  
 
-def find_files(path):
+def find_files(path, ignore):
 	#path = sys.argv[1]
 	#print 'Checking under directory: ', path
 
@@ -69,7 +72,7 @@ def find_files(path):
 		np = 7
 		jobs = []
 		for i in range(np):	
-			p = mp.Process(target=parallel_worker, args=(i, unsearched, found))
+			p = mp.Process(target=parallel_worker, args=(i, unsearched, found, ignore))
 			jobs.append(p)
 		for p in jobs:
 			p.start()
@@ -137,9 +140,13 @@ class WhatIsHere:
 			pass
 
 
-#if __name__ == '__main__':
-#	
-#	r = find_files()
-#	for item in r:
-#		print item.ncfiles
+if __name__ == '__main__':
+	path = '/g/data2/uc0/kad900/test_files'
+	ignore = '/g/data2/uc0/kad900/test_files/landsat'
+	fileList, fileTypes = find_files(path, ignore)
+	for item in fileList:	
+		print item
+
+	# for item in r:
+	#	print item.ncfiles
 

@@ -59,11 +59,11 @@ class check:
 	As it searches, it also keeps track so of the different file
 	types and total size per type. 
 	--------------------------------------------------------------'''
-	def getAllFiles(self, path, nf):
+	def getAllFiles(self, path, nf, ignore):
 		# If path is a directory --> continue and search under path
 		if os.path.isdir(path):	
 			# Calls 'findfiles.py' to crawl the directory
-			self.fileList, self.filetypes = findfiles.find_files(path)
+			self.fileList, self.filetypes = findfiles.find_files(path, ignore)
 						
 			if nf == 'all':
 				pass # list already contains all files to check
@@ -83,7 +83,7 @@ class check:
 
 		# Else if just one file specified
 		else:
-			self.fileList.append(file)			
+			self.fileList.append(path)			
 		
 		
 		# Finalise queue
@@ -127,30 +127,37 @@ class check:
 			
 
 			tmplog.header(ncfile)				
-							
-			# Open/read file and extract global attributes, netCDF format
-			#gatts, ncformat, conv, vars = readfile.read(ncfile)
-			f = metadata.read(ncfile)
-
-			tmplog.meta(f.atts, f.ncformat, f.conv)
 			
-			# Initialise CF and ACDD lists on first loop then check 
-			# if variables the same between each file on subsequent loops.
-			cf.newvars(f.vars.keys())
-							
-		
-			# ACDD Compliance Check
-			# Check list against global file attributes, track sum of missing acdd attrs
-			meta.acddCheck(f.atts)	
-				
-			# Also keep track of file netCDF format and conventions used (if any)
-			meta.fileFormat(f.ncformat)
-			meta.conventions(f.conv)
+			try:				
+				# Open/read file and extract global attributes, netCDF format
+				#gatts, ncformat, conv, vars = readfile.read(ncfile)
+				f = metadata.read(ncfile)
 
-			# Check for coordinate variables and spatial info
-			meta.spatialCheck(f.vars)		
-			meta.coordvarCheck(f.dims, f.vars.keys())
-			meta.stdnamesCheck(f.vars)
+				tmplog.meta(f.atts, f.ncformat, f.conv)
+				
+				# Initialise CF and ACDD lists on first loop then check 
+				# if variables the same between each file on subsequent loops.
+				cf.newvars(f.vars.keys())
+								
+			
+				# ACDD Compliance Check
+				# Check list against global file attributes, track sum of missing acdd attrs
+				meta.acddCheck(f.atts)	
+					
+				# Also keep track of file netCDF format and conventions used (if any)
+				meta.fileFormat(f.ncformat)
+				meta.conventions(f.conv)
+
+				# Check for coordinate variables and spatial info
+				meta.spatialCheck(f.vars)		
+				meta.coordvarCheck(f.dims, f.vars.keys())
+				meta.stdnamesCheck(f.vars)
+	
+			except: 
+				print 'Unexpected netcdf error: ', sys.exc_info()[0], sys.exc_info()[1]
+				print '\nFILE: '+ncfile+' [SKIPPING FILE]\n'
+
+
 			'''
 			-------------------------------------------------------
 			Wrapper for CF-Convention 'cfchecks.py' 
@@ -177,7 +184,7 @@ class check:
 					rc = 0
 			
 			if rc == 0:
-				print 'Unexpected error: ', sys.exc_info()[0], sys.exc_info()[1]
+				print 'Unexpected cfchecks error: ', sys.exc_info()[0], sys.exc_info()[1]
 				print '\nFILE: '+ncfile+' [SKIPPING FILE]\n'
 				skipped.append(ncfile)
 

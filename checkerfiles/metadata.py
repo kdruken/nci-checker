@@ -183,7 +183,6 @@ def check_req():
 		'summary',
 		'source',
 		'date_created',
-		'product_version'
 		]
 
 def check_rec():
@@ -192,6 +191,7 @@ def check_rec():
 		'metadata_link',
 		'history',
 		'doi',
+		'product_version',
 		'institution',
 		'license',
 		'processing_level',

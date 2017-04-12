@@ -22,6 +22,7 @@ def help():
 	--nf		Number (or 'all') of files to check (default = 1)
 	--log 		Save detailed output including the CF information 
 			(default output is a brief summary)
+	--ignore	Ignore files under specified directory path
 	--debug		Keep tmp files for debugging
 
 	'''
@@ -110,4 +111,12 @@ class getinputs(object):
 					sys.exit("Error: '--nf' value must be numeric or 'all'")
 		else: 
 			self.nf = []
+
+
+		# '--ignore' specifies a directory where files are skipped 
+		# by checker
+		if argv.count('--ignore') == 1:
+			self.ignore = argv[argv.index('--ignore')+1]
+		else:
+			self.ignore = None
 				

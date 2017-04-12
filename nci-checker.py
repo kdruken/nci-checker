@@ -48,12 +48,12 @@ def main():
 	run = checkfiles.check()
 	
 	print "Searching directory and subdirectories for '.nc' files..."
-	run.getAllFiles(inputs.path, inputs.nf)
+	run.getAllFiles(inputs.path, inputs.nf, inputs.ignore)
 
 
 	# If number of files is less than requested 'np', reduce to np = total # files
 	if inputs.ncpu > len(run.fileList):
-		inputs.ncpu = len(run.fileList) - 1
+		inputs.ncpu = len(run.fileList) 
 
 
 	'''--------------------------------------------------------------
